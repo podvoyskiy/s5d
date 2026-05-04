@@ -1,0 +1,11 @@
+[package]
+name = "s5d"
+description = "SOCKS5 proxy server"
+version = "0.1.0"
+edition = "2024"
+authors = ["Podvoyskiy Ilya <ilya.podvoyskiy@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/podvoyskiy/s5d"
+readme = "README.md"
+keywords = ["socks5", "proxy", "cli"]
+rust-version = "1.88.0"
