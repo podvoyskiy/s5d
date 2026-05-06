@@ -47,17 +47,17 @@ fn test_proxy_connect() {
     let proxy = TestProxy::start(33334);
     let mut client = proxy.client();
 
-    //handshake
+    // handshake
     client.write_all(&[0x05, 0x01, 0x00]).unwrap();
     let mut buf = [0; 2];
     client.read_exact(&mut buf).unwrap();
 
-    //connect
+    // connect
     let request = &[
         0x05, 0x01, 0x00, 0x03,
-        0x0b, //domain length: 11 bytes
-        b'h', b't', b't', b'p', b'b', b'i', b'n', b'.', b'o', b'r', b'g', //httpbin.org
-        0x01, 0xbb //port: 443
+        0x0b, // domain length: 11 bytes
+        b'h', b't', b't', b'p', b'b', b'i', b'n', b'.', b'o', b'r', b'g', // httpbin.org
+        0x01, 0xbb // port: 443
     ];
     client.write_all(request).unwrap();
     let mut buf = [0; 10];

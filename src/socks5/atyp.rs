@@ -23,7 +23,7 @@ impl Atyp {
 
                 Ok(vec![addr])
             },
-            Atyp::DomainName => { //1 byte is domain length, followed by the domain, then 2 bytes for the port
+            Atyp::DomainName => { // 1 byte is domain length, followed by the domain, then 2 bytes for the port
                 let domain_len = *buf.first().ok_or(AppError::InvalidDomain)? as usize;
                 let domain_bytes = buf.get(1..1 + domain_len).ok_or(AppError::InvalidDomain)?;
                 let port_bytes = buf.get(1 + domain_len..1 + domain_len + 2).ok_or(AppError::InvalidDomain)?;

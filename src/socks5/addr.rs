@@ -1,4 +1,6 @@
-use std::net::{IpAddr, TcpStream};
+use std::net::IpAddr;
+
+use tokio::net::TcpStream;
 
 use crate::prelude::*;
 
