@@ -2,24 +2,26 @@ use std::net::SocketAddr;
 
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 
-use crate::{prelude::*, socks5::{addr, atyp::Atyp, consts}};
+use crate::{prelude::*, socks5::{parse, atyp::Atyp, config::Socks5Config, consts}};
 
 #[derive(Debug, PartialEq)]
 enum Socks5State {
     Handshake,
+    Auth,
     Connect,
     Tunneling
 }
 
 pub struct Socks5 {
+    config: Socks5Config,
     state: Socks5State,
     client: Option<TcpStream>,
     target: Option<TcpStream>,
 }
 
 impl Socks5 {
-    pub fn new(client: TcpStream) -> Self {
-        Self { state: Socks5State::Handshake, client: Some(client), target: None }
+    pub fn new(config: Socks5Config, client: TcpStream) -> Self {
+        Self { config, state: Socks5State::Handshake, client: Some(client), target: None }
     }
 
     pub async fn serve(&mut self) -> Result<(), AppError> {
@@ -31,6 +33,7 @@ impl Socks5 {
                 Ok(n) => {
                     match self.state {
                         Socks5State::Handshake => self.handshake(&buf[..n]).await?,
+                        Socks5State::Auth => self.auth(&buf[..n]).await?,
                         Socks5State::Connect => {
                             let target_addrs = self.handle_connect(&buf[..n])?;
                             self.connect_to_target(target_addrs).await?;
@@ -64,18 +67,41 @@ impl Socks5 {
     }
 
     async fn handshake(&mut self, buf: &[u8]) -> Result<(), AppError> {
-        if buf.first() != Some(&consts::VERSION) { return Err(AppError::HandshakeFailed); }
-        if buf.get(2) != Some(&consts::NO_AUTH) {
-            self.client.as_mut().unwrap().write_all(&[consts::VERSION, consts::reply::NO_ACCEPTABLE_METHOD]).await?;
-            return Err(AppError::HandshakeFailed);
+        if buf.len() < 3 || buf[0] != consts::SOCKS_VERSION { return Err(AppError::HandshakeFailed); }
+        let methods = buf.get(2..2 + buf[1] as usize).ok_or(AppError::HandshakeFailed)?;
+
+        if self.config.auth.is_some() && methods.contains(&consts::AUTH) {
+            self.state = Socks5State::Auth;
+            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::AUTH]).await?;
+            Ok(())
+        } else if self.config.auth.is_none() && methods.contains(&consts::NO_AUTH) {
+            self.state = Socks5State::Connect;
+            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::NO_AUTH]).await?;
+            Ok(())
+        } else {
+            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::reply::NO_ACCEPTABLE_METHOD]).await?;
+            Err(AppError::HandshakeFailed)
         }
+    }
+
+    async fn auth(&mut self, buf: &[u8]) -> Result<(), AppError> {
+        if buf.first() != Some(&consts::AUTH_VERSION) { return Err(AppError::AuthFailed); }
+
+        let (user, pass) = parse::bytes_to_credentials(buf)?;
+        let (user_config, pass_config) = self.config.auth.as_ref().unwrap();
+
+        if &user != user_config || &pass != pass_config {
+            self.client.as_mut().unwrap().write_all(&[consts::AUTH_VERSION, consts::reply::FAILURE]).await?;
+            return Err(AppError::AuthFailed);
+        }
+        
         self.state = Socks5State::Connect;
-        self.client.as_mut().unwrap().write_all(&[consts::VERSION, consts::reply::SUCCESS]).await?;
+        self.client.as_mut().unwrap().write_all(&[consts::AUTH_VERSION, consts::reply::SUCCESS]).await?;
         Ok(())
     }
 
     fn handle_connect(&mut self, buf: &[u8]) -> Result<Vec<SocketAddr>, AppError> {
-        if buf.len() < 4 || buf[0] != consts::VERSION || buf[1] != consts::CMD_CONNECT { return Err(AppError::ConnectFailed); }
+        if buf.len() < 4 || buf[0] != consts::SOCKS_VERSION || buf[1] != consts::CMD_CONNECT { return Err(AppError::ConnectFailed); }
         
         let atyp = Atyp::try_from(buf[3])?;
         let data = &buf.get(4..).ok_or(AppError::ConnectFailed)?;
@@ -91,9 +117,9 @@ impl Socks5 {
             println!("{} {}", "successfully connected to".green(), addr.to_string().green());
             
             let mut response = Vec::with_capacity(10);
-            response.extend_from_slice(&[consts::VERSION, consts::reply::SUCCESS, consts::reply::RSV]);
-            response.extend(&[if addr.is_ipv4() { Atyp::IpV4 as u8 } else { Atyp::Ipv6 as u8 }]);
-            response.extend(addr::to_bytes(self.target.as_ref().unwrap())?);
+            response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::reply::RSV]);
+            response.push(if addr.is_ipv4() { Atyp::IpV4 as u8 } else { Atyp::Ipv6 as u8 });
+            response.extend(parse::addr_to_bytes(self.target.as_ref().unwrap())?);
 
             self.state = Socks5State::Tunneling;
             self.client.as_mut().unwrap().write_all(&response).await?;
@@ -103,9 +129,9 @@ impl Socks5 {
         eprintln!("{}", "failed connected to target".red());
 
         let mut response = Vec::with_capacity(10);
-        response.extend_from_slice(&[consts::VERSION, consts::reply::FAILURE, consts::reply::RSV, Atyp::IpV4 as u8]);
-        response.extend(consts::reply::BND_ADDR);
-        response.extend(consts::reply::BND_PORT);
+        response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::reply::RSV, Atyp::IpV4 as u8]);
+        response.extend_from_slice(consts::reply::BND_ADDR);
+        response.extend_from_slice(consts::reply::BND_PORT);
 
         self.client.as_mut().unwrap().write_all(&response).await?;
         Err(AppError::TargetUnreachable)

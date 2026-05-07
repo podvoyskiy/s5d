@@ -1,11 +1,13 @@
 pub mod config;
 pub mod connection;
 pub mod atyp;
-pub mod addr;
+pub mod parse;
 
 pub mod consts {
-    pub const VERSION: u8 = 0x05;
+    pub const SOCKS_VERSION: u8 = 0x05;
     pub const NO_AUTH: u8 = 0x00;
+    pub const AUTH: u8 = 0x02;
+    pub const AUTH_VERSION: u8 = 0x01;
 
     pub const CMD_CONNECT: u8 = 0x01;
     

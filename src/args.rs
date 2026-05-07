@@ -5,7 +5,8 @@ use crate::prelude::*;
 #[derive(Debug, PartialEq)]
 pub enum Arg {
     Host(Ipv4Addr),
-    Port(u16)
+    Port(u16),
+    Auth((String, String))
 }
 
 impl Arg {
@@ -35,8 +36,16 @@ impl Arg {
 
     fn from_string(str: &str, value: &str) -> Result<Self, AppError> {
         match str {
-            "--host" => Ok(Self::Host(Ipv4Addr::from_str(value).map_err(|_| AppError::Arguments(format!("invalid host: {value}")))?)),
-            "--port" => Ok(Self::Port(value.parse().map_err(|_| AppError::Arguments(format!("invalid port: {value}")))?)),
+            "--host" => Ipv4Addr::from_str(value)
+                .map(Self::Host)
+                .map_err(|_| AppError::Arguments(format!("invalid host: {value}"))),
+            "--port" => value.parse()
+                .map(Self::Port)
+                .map_err(|_| AppError::Arguments(format!("invalid port: {value}"))),
+            "--auth" => value
+                .split_once(":")
+                .map(|(user, pass)| Self::Auth((user.to_string(), pass.to_string())))
+                .ok_or_else(|| AppError::Arguments(format!("invalid auth format: {value} (expected username:password)"))),
             _ => Err(AppError::Arguments(format!("unknown argument {str}")))
         }
     }
@@ -71,5 +80,11 @@ mod test {
     fn test_invalid_port() {
         let args = vec!["program", "--port", "foo"];
         assert!(Arg::from_args(args).is_err());
+    }
+
+    #[test]
+    fn test_auth() {
+        let args = vec!["program", "--auth", "user:pass"];
+        assert!(Arg::from_args(args).is_ok());
     }
 }
