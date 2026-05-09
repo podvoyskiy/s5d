@@ -1,10 +1,13 @@
-.PHONY: server server-auth test build
+.PHONY: server server-auth client test build
 
 server:
 	cargo run --bin s5d
 
 server-auth:
 	cargo run --bin s5d -- --auth admin:12345
+
+client:
+	cargo run --bin s5c
 
 test:
 	cargo test -p s5d
@@ -14,5 +17,6 @@ build:
 
 s: server
 sa: server-auth
+c: client
 t: test
 b: build
