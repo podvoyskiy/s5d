@@ -29,6 +29,8 @@ pub fn bytes_to_credentials(buf: &[u8]) -> Result<(String, String), AppError> {
     let user = String::from_utf8(user).map_err(|_| AppError::AuthFailed)?;
     let pass = String::from_utf8(pass).map_err(|_| AppError::AuthFailed)?;
 
+    debug!(username = ?user, password = ?pass, "auth");
+
     Ok((user, pass))
 }
 
@@ -43,8 +45,7 @@ mod test {
             0x04,
             b'u', b's', b'e', b'r',
             0x06,
-            b'p', b'a', b's', b's', b'w', b'd',
-            0x09
+            b'p', b'a', b's', b's', b'w', b'd'
         ];
         let credentials = bytes_to_credentials(buf);
         assert!(credentials.is_ok());

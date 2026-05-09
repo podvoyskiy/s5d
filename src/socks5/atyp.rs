@@ -21,6 +21,7 @@ impl Atyp {
                     port
                 );
 
+                debug!(ip = %addr.ip(), port = addr.port(), "parsed IPv4 address");
                 Ok(vec![addr])
             },
             Atyp::DomainName => { // 1 byte is domain length, followed by the domain, then 2 bytes for the port
@@ -30,6 +31,8 @@ impl Atyp {
 
                 let domain = String::from_utf8_lossy(domain_bytes);
                 let port = u16::from_be_bytes([port_bytes[0], port_bytes[1]]);
+
+                debug!(%domain, port, "resolving domain name");
 
                 let addrs = (domain.as_ref(), port).to_socket_addrs().map_err(|_| AppError::InvalidDomain)?;
 
@@ -45,6 +48,7 @@ impl Atyp {
                     port
                 );
 
+                debug!(ip = %addr.ip(), port = addr.port(), "parsed IPv6 address");
                 Ok(vec![addr])
             }
         }

@@ -12,6 +12,7 @@ enum Socks5State {
     Tunneling
 }
 
+#[derive(Debug)]
 pub struct Socks5 {
     config: Socks5Config,
     state: Socks5State,
@@ -45,15 +46,18 @@ impl Socks5 {
                             let (mut target_r, mut target_w) = self.target.take().unwrap().into_split();
 
                             let client_to_target = tokio::spawn(async move {
-                                let _ = tokio::io::copy(&mut client_r, &mut target_w).await;
+                                if let Err(e) = tokio::io::copy(&mut client_r, &mut target_w).await {
+                                    debug!("client->target copy error: {}", e)   
+                                }
                             });
 
                             let target_to_client = tokio::spawn(async move {
-                                let _ = tokio::io::copy(&mut target_r, &mut client_w).await;
+                                if let Err(e) = tokio::io::copy(&mut target_r, &mut client_w).await {
+                                    debug!("target->client copy error: {}", e)   
+                                }
                             });
 
                             let _ = tokio::join!(client_to_target, target_to_client);
-                            println!("{}", "connection closed".orange());
 
                             break;
                         },
@@ -67,6 +71,7 @@ impl Socks5 {
     }
 
     async fn handshake(&mut self, buf: &[u8]) -> Result<(), AppError> {
+        trace!(buf, "handshake");
         if buf.len() < 3 || buf[0] != consts::SOCKS_VERSION { return Err(AppError::HandshakeFailed); }
         let methods = buf.get(2..2 + buf[1] as usize).ok_or(AppError::HandshakeFailed)?;
 
@@ -85,12 +90,14 @@ impl Socks5 {
     }
 
     async fn auth(&mut self, buf: &[u8]) -> Result<(), AppError> {
+        trace!(buf, "auth");
         if buf.first() != Some(&consts::AUTH_VERSION) { return Err(AppError::AuthFailed); }
 
         let (user, pass) = parse::bytes_to_credentials(buf)?;
         let (user_config, pass_config) = self.config.auth.as_ref().unwrap();
 
         if &user != user_config || &pass != pass_config {
+            warn!(username = ?user, password = ?pass, "auth failed. invalid credentials");
             self.client.as_mut().unwrap().write_all(&[consts::AUTH_VERSION, consts::reply::FAILURE]).await?;
             return Err(AppError::AuthFailed);
         }
@@ -101,6 +108,7 @@ impl Socks5 {
     }
 
     fn handle_connect(&mut self, buf: &[u8]) -> Result<Vec<SocketAddr>, AppError> {
+        trace!(buf, "handle_connect");
         if buf.len() < 4 || buf[0] != consts::SOCKS_VERSION || buf[1] != consts::CMD_CONNECT { return Err(AppError::ConnectFailed); }
         
         let atyp = Atyp::try_from(buf[3])?;
@@ -114,7 +122,7 @@ impl Socks5 {
             if stream.is_err() { continue; }
 
             self.target = Some(stream.unwrap());
-            println!("{} {}", "successfully connected to".green(), addr.to_string().green());
+            info!(target = ?addr, "connected to");
             
             let mut response = Vec::with_capacity(10);
             response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::reply::RSV]);
@@ -126,7 +134,7 @@ impl Socks5 {
             return Ok(());
         }
 
-        eprintln!("{}", "failed connected to target".red());
+        warn!("failed to connect to any target address");
 
         let mut response = Vec::with_capacity(10);
         response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::reply::RSV, Atyp::IpV4 as u8]);
