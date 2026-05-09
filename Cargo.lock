@@ -83,6 +83,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "s5c"
+version = "0.3.1"
+dependencies = [
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "s5d"
 version = "0.3.1"
 dependencies = [

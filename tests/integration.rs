@@ -1,41 +1,12 @@
-use std::{io::{Read, Write}, net::TcpStream, process::{Child, Command}, thread, time::Duration};
+mod common;
 
-struct TestProxy {
-    child: Child,
-    port: u16,
-}
+use std::io::{Read, Write};
 
-impl TestProxy {
-    fn start(port: u16, auth: Option<(String, String)>) -> Self {
-        let mut cmd = Command::new("./target/debug/s5d");
-        cmd.arg("--port").arg(port.to_string());
-
-        if let Some((user, pass)) = &auth {
-            cmd.arg("--auth").arg(format!("{user}:{pass}"));
-        }
-
-        let child = cmd.spawn().unwrap();
-
-        thread::sleep(Duration::from_millis(200));
-
-        Self { child, port }
-    }
-
-    fn client(&self) -> TcpStream {
-        TcpStream::connect(format!("127.0.0.1:{}", self.port)).unwrap()
-    }
-}
-
-impl Drop for TestProxy {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
+use common::TestServer;
 
 #[test]
 fn test_proxy_handshake() {
-    let proxy = TestProxy::start(33333, None);
+    let proxy = TestServer::start(33333, None);
     let mut client = proxy.client();
 
     client.write_all(&[0x05, 0x01, 0x00]).unwrap();
@@ -47,7 +18,7 @@ fn test_proxy_handshake() {
 
 #[test]
 fn test_proxy_connect() {
-    let proxy = TestProxy::start(33334, None);
+    let proxy = TestServer::start(33334, None);
     let mut client = proxy.client();
 
     // handshake
@@ -74,7 +45,7 @@ fn test_proxy_auth() {
     let username = String::from("admin");
     let password = String::from("12345");
 
-    let proxy = TestProxy::start(33335, Some((username.clone(), password.clone())));
+    let proxy = TestServer::start(33335, Some((username.clone(), password.clone())));
     let mut client = proxy.client();
 
     // handshake
