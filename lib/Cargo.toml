@@ -1,0 +1,4 @@
+[package]
+name = "s5"
+version.workspace = true
+edition.workspace = true

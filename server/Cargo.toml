@@ -2,15 +2,13 @@
 name = "s5d"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
-authors.workspace = true
-license.workspace = true
-repository.workspace = true
 
 [dependencies]
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+s5 = { workspace = true }
 
 [[bin]]
 name = "s5d"
