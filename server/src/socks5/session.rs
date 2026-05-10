@@ -12,14 +12,14 @@ enum Socks5State {
 }
 
 #[derive(Debug)]
-pub struct Socks5 {
+pub struct Socks5Session {
     config: Socks5Config,
     state: Socks5State,
     client: Option<TcpStream>,
     target: Option<TcpStream>,
 }
 
-impl Socks5 {
+impl Socks5Session {
     pub fn new(config: Socks5Config, client: TcpStream) -> Self {
         Self { config, state: Socks5State::Handshake, client: Some(client), target: None }
     }

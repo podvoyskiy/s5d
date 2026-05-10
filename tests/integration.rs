@@ -59,9 +59,9 @@ fn test_proxy_auth() {
     let mut response = Vec::with_capacity(1 + 1 + username.len() + 1 + password.len());
     response.push(0x01); // auth version
     response.push(username.len() as u8); // ulen
-    response.extend(username.as_bytes()); // uname
+    response.extend_from_slice(username.as_bytes()); // uname
     response.push(password.len() as u8); // plen
-    response.extend(password.as_bytes()); // passwd
+    response.extend_from_slice(password.as_bytes()); // passwd
 
     client.write_all(&response).unwrap();
     let mut buf = [0; 2];

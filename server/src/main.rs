@@ -8,7 +8,7 @@ use prelude::*;
 use tokio::net::TcpListener;
 use tracing::Level;
 use tracing_subscriber::fmt;
-use crate::socks5::{config::Socks5Config, connection::{Socks5}};
+use crate::socks5::{config::Socks5Config, session::Socks5Session};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
@@ -32,8 +32,8 @@ async fn main() -> Result<(), AppError> {
         let (stream, client_addr) = listener.accept().await?;
         info!(%client_addr, "new connection");
         tokio::spawn(async move {
-            let mut socks5 = Socks5::new(config, stream);
-            if let Err(error) = socks5.serve().await {
+            let mut session = Socks5Session::new(config, stream);
+            if let Err(error) = session.serve().await {
                 error!(%error, %client_addr);
             }
             info!(%client_addr, "connection closed");

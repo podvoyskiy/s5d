@@ -1,3 +1,3 @@
 pub use s5d_lib::*;
-pub use tracing::{info, debug, trace};
+pub use tracing::{info, trace};
 pub use crate::mode::Mode;
