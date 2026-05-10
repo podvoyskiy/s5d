@@ -1,4 +1,4 @@
-.PHONY: server server-auth client test build
+.PHONY: server server-auth client test test-server test-client test-lib build
 
 server:
 	cargo run --bin s5d
@@ -9,8 +9,16 @@ server-auth:
 client:
 	cargo run --bin s5d-client
 
-test:
-	cargo test -p s5d && cargo test -p s5d-lib
+test: test-server test-client test-lib
+
+test-server:
+	cargo test -p s5d
+
+test-client:
+	cargo test -p s5d-client
+
+test-lib:
+	cargo test -p s5d-lib
 
 build:
 	cargo build --release --target x86_64-unknown-linux-musl
@@ -19,4 +27,7 @@ s: server
 sa: server-auth
 c: client
 t: test
+ts: test-server
+tc: test-client
+tl: test-lib
 b: build
