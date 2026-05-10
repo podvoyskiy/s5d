@@ -10,7 +10,7 @@ client:
 	cargo run --bin s5c
 
 test:
-	cargo test -p s5d
+	cargo test -p s5d && cargo test -p s5
 
 build:
 	cargo build --release --target x86_64-unknown-linux-musl

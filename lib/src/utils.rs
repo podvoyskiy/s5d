@@ -1,4 +1,4 @@
-use crate::errors::AppError;
+use crate::AppError;
 
 pub fn collect_args<I, S>(iter: I) -> Result<Vec<(String, String)>, AppError>
 where
@@ -26,6 +26,13 @@ mod test {
 
     #[test]
     fn test_valid_args() {
-        
+        let args = vec!["program", "--key", "value"];
+        assert!(collect_args(args).is_ok());
+    }
+
+    #[test]
+    fn test_missing_value() {
+        let args = vec!["program", "--key"];
+        assert!(collect_args(args).is_err());
     }
 }

@@ -1,5 +1,7 @@
 use std::{env::args, net::Ipv4Addr, str::FromStr};
 
+use s5::utils;
+
 use crate::prelude::*;
 
 #[derive(Debug, PartialEq)]
@@ -19,23 +21,14 @@ impl Arg {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        iter.into_iter()
-            .skip(1)
-            .map(|s| s.as_ref().to_string())
-            .collect::<Vec<String>>()
-            .chunks(2)
-            .map(|chunk| {
-                let [key, value] = chunk else { 
-                    return Err(AppError::Arguments(format!("invalid argument format {chunk:?} (expected --key value)"))); 
-                };
-                if !key.starts_with("--") { return Err(AppError::Arguments(format!("invalid argument syntax: {key} (must start with --)"))); }
-                Self::from_string(key, value)
-            })
+        utils::collect_args(iter)?
+            .into_iter()
+            .map(|(key, value)| Self::from_string(&key, &value))
             .collect()
     }
 
-    fn from_string(str: &str, value: &str) -> Result<Self, AppError> {
-        match str {
+    fn from_string(key: &str, value: &str) -> Result<Self, AppError> {
+        match key {
             "--host" => Ipv4Addr::from_str(value)
                 .map(Self::Host)
                 .map_err(|_| AppError::Arguments(format!("invalid host: {value}"))),
@@ -46,7 +39,7 @@ impl Arg {
                 .split_once(":")
                 .map(|(user, pass)| Self::Auth((user.to_string(), pass.to_string())))
                 .ok_or_else(|| AppError::Arguments(format!("invalid auth format: {value} (expected username:password)"))),
-            _ => Err(AppError::Arguments(format!("unknown argument {str}")))
+            _ => Err(AppError::Arguments(format!("unknown argument {key}")))
         }
     }
 }
@@ -62,12 +55,6 @@ mod test {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], Arg::Host(Ipv4Addr::new(127, 0, 0, 1)));
         assert_eq!(result[1], Arg::Port(3000));
-    }
-
-    #[test]
-    fn test_missing_value() {
-        let args = vec!["program", "--port"];
-        assert!(Arg::from_args(args).is_err());
     }
 
     #[test]
