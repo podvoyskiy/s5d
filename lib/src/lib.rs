@@ -1,5 +1,4 @@
 pub mod consts;
-
-pub fn test() {
-    println!("{:?}", "lib test");
-}
+pub mod colorize;
+pub mod errors;
+pub mod utils;

@@ -1,8 +1,6 @@
 #![warn(clippy::all)]
 
 mod args;
-mod errors;
-mod colorize;
 mod socks5;
 mod prelude;
 

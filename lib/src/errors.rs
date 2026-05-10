@@ -1,6 +1,6 @@
 use std::{fmt::{self, Debug, Display}, io};
 
-use crate::prelude::*;
+use crate::colorize::Colorize;
 
 pub enum AppError {
     Io(io::Error),

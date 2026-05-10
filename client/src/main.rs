@@ -1,6 +1,8 @@
-use s5::test;
+use std::env::args;
+
+use s5::utils;
 
 fn main() {
-    println!("s5c - SOCKS5 client");
-    test();
+    let test = utils::collect_args(args());
+    println!("{:?}", test);
 }
