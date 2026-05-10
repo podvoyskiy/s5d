@@ -7,7 +7,8 @@ use crate::{mode::Mode, prelude::*};
 pub enum Arg {
     Mode(Mode),
     Server(SocketAddr),
-    Auth((String, String))
+    Auth((String, String)),
+    Target(String)
 }
 
 impl Arg {
@@ -36,6 +37,7 @@ impl Arg {
                 .split_once(":")
                 .map(|(user, pass)| Self::Auth((user.to_string(), pass.to_string())))
                 .ok_or_else(|| AppError::Arguments(format!("invalid auth format: {value} (expected username:password)"))),
+            "--target" => Ok(Self::Target(value.into())), //TODO add validation
             _  => Err(AppError::Arguments(format!("unknown argument {key}")))
         }
     }

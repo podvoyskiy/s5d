@@ -18,17 +18,17 @@ impl Default for Socks5Config  {
 
 impl Socks5Config {
     pub fn new() -> Result<Self, AppError> {
-        let mut socks5 = Self::default();
+        let mut config = Self::default();
 
         for arg in Arg::init()? {
             match arg {
-                Arg::Host(ip) => socks5.host = ip,
-                Arg::Port(port) => socks5.port = port,
-                Arg::Auth(auth) => socks5.auth = Some(auth),
+                Arg::Host(ip) => config.host = ip,
+                Arg::Port(port) => config.port = port,
+                Arg::Auth(auth) => config.auth = Some(auth),
             }
         }
-        if socks5.port == 0 { return Err(AppError::Arguments("port cannot be 0".into())); }
+        if config.port == 0 { return Err(AppError::Arguments("port cannot be 0".into())); }
         
-        Ok(socks5)
+        Ok(config)
     }
 }
