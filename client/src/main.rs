@@ -24,8 +24,8 @@ async fn main() -> Result<(), AppError> {
     let mut stream = TcpStream::connect(config.server).await.map_err(|_| AppError::TargetUnreachable)?;
 
     //handshake
-    let mut methods = vec![consts::NO_AUTH];
-    if config.auth.is_some() { methods.push(consts::AUTH); }
+    let mut methods = vec![consts::auth::NO_AUTH];
+    if config.auth.is_some() { methods.push(consts::auth::AUTH); }
 
     let mut handshake = Vec::with_capacity(2 + methods.len());
     handshake.push(consts::SOCKS_VERSION);
@@ -42,10 +42,10 @@ async fn main() -> Result<(), AppError> {
     }
 
     //auth
-    if buf[1] == consts::AUTH {
+    if buf[1] == consts::auth::AUTH {
         let (username, password) = config.auth.unwrap();
         let mut auth = Vec::with_capacity(1 + 1 + username.len() + 1 + password.len());
-        auth.push(consts::AUTH_VERSION);
+        auth.push(consts::auth::VERSION);
         auth.push(username.len() as u8);
         auth.extend_from_slice(username.as_bytes());
         auth.push(password.len() as u8);
@@ -57,14 +57,14 @@ async fn main() -> Result<(), AppError> {
         stream.read_exact(&mut buf).await?;
         trace!(?buf, "auth");
 
-        if buf[0] != consts::AUTH_VERSION || buf[1] != consts::reply::SUCCESS { 
+        if buf[0] != consts::auth::VERSION || buf[1] != consts::reply::SUCCESS { 
             return Err(AppError::AuthFailed); 
         }
     }
 
     //auth
     let connect = &[
-        consts::SOCKS_VERSION, consts::connect::CMD, consts::connect::RSV, consts::connect::ATYP_DOMAINNAME,
+        consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV, consts::connect::ATYP_DOMAINNAME,
         0x0b, // domain length: 11 bytes
         b'h', b't', b't', b'p', b'b', b'i', b'n', b'.', b'o', b'r', b'g', // httpbin.org
         0x01, 0xbb // port: 443

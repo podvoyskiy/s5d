@@ -74,13 +74,13 @@ impl Socks5Session {
         if buf.len() < 3 || buf[0] != consts::SOCKS_VERSION { return Err(AppError::HandshakeFailed); }
         let methods = buf.get(2..2 + buf[1] as usize).ok_or(AppError::HandshakeFailed)?;
 
-        if self.config.auth.is_some() && methods.contains(&consts::AUTH) {
+        if self.config.auth.is_some() && methods.contains(&consts::auth::AUTH) {
             self.state = Socks5State::Auth;
-            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::AUTH]).await?;
+            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::auth::AUTH]).await?;
             Ok(())
-        } else if self.config.auth.is_none() && methods.contains(&consts::NO_AUTH) {
+        } else if self.config.auth.is_none() && methods.contains(&consts::auth::NO_AUTH) {
             self.state = Socks5State::Connect;
-            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::NO_AUTH]).await?;
+            self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::auth::NO_AUTH]).await?;
             Ok(())
         } else {
             self.client.as_mut().unwrap().write_all(&[consts::SOCKS_VERSION, consts::reply::NO_ACCEPTABLE_METHOD]).await?;
@@ -90,19 +90,19 @@ impl Socks5Session {
 
     async fn auth(&mut self, buf: &[u8]) -> Result<(), AppError> {
         trace!(buf, "auth");
-        if buf.first() != Some(&consts::AUTH_VERSION) { return Err(AppError::AuthFailed); }
+        if buf.first() != Some(&consts::auth::VERSION) { return Err(AppError::AuthFailed); }
 
         let (user, pass) = parse::bytes_to_credentials(buf)?;
         let (user_config, pass_config) = self.config.auth.as_ref().unwrap();
 
         if &user != user_config || &pass != pass_config {
             warn!(username = ?user, password = ?pass, "auth failed. invalid credentials");
-            self.client.as_mut().unwrap().write_all(&[consts::AUTH_VERSION, consts::reply::FAILURE]).await?;
+            self.client.as_mut().unwrap().write_all(&[consts::auth::VERSION, consts::reply::FAILURE]).await?;
             return Err(AppError::AuthFailed);
         }
         
         self.state = Socks5State::Connect;
-        self.client.as_mut().unwrap().write_all(&[consts::AUTH_VERSION, consts::reply::SUCCESS]).await?;
+        self.client.as_mut().unwrap().write_all(&[consts::auth::VERSION, consts::reply::SUCCESS]).await?;
         Ok(())
     }
 
@@ -124,7 +124,7 @@ impl Socks5Session {
             info!(target = ?addr, "connected to");
             
             let mut response = Vec::with_capacity(10);
-            response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::reply::RSV]);
+            response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::RSV]);
             response.push(if addr.is_ipv4() { Atyp::IpV4 as u8 } else { Atyp::Ipv6 as u8 });
             response.extend(parse::addr_to_bytes(self.target.as_ref().unwrap())?);
 
@@ -136,7 +136,7 @@ impl Socks5Session {
         warn!("failed to connect to any target address");
 
         let mut response = Vec::with_capacity(10);
-        response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::reply::RSV, Atyp::IpV4 as u8]);
+        response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::RSV, Atyp::IpV4 as u8]);
         response.extend_from_slice(consts::reply::BND_ADDR);
         response.extend_from_slice(consts::reply::BND_PORT);
 
