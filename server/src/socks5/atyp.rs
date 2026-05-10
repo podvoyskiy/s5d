@@ -3,10 +3,10 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
 use crate::{prelude::*};
 
 #[repr(u8)]
-pub enum Atyp {
-    IpV4 = 0x01,
-    DomainName = 0x03,
-    Ipv6 = 0x04
+pub enum Atyp { //TODO maybe move it
+    IpV4 = consts::connect::ATYP_IPV4,
+    DomainName = consts::connect::ATYP_DOMAINNAME,
+    Ipv6 = consts::connect::ATYP_IPV6
 }
 
 impl Atyp {
@@ -60,9 +60,9 @@ impl TryFrom<u8> for Atyp {
 
     fn try_from(byte: u8) -> Result<Self, Self::Error> {
         match byte {
-            0x01 => Ok(Self::IpV4),
-            0x03 => Ok(Self::DomainName),
-            0x04 => Ok(Self::Ipv6),
+            consts::connect::ATYP_IPV4 => Ok(Self::IpV4),
+            consts::connect::ATYP_DOMAINNAME => Ok(Self::DomainName),
+            consts::connect::ATYP_IPV6 => Ok(Self::Ipv6),
             _ => Err(AppError::Socks5("invalid atyp".into()))
         }
     }

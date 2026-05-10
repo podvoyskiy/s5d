@@ -44,14 +44,14 @@ async fn main() -> Result<(), AppError> {
     //auth
     if buf[1] == consts::AUTH {
         let (username, password) = config.auth.unwrap();
-        let mut buf = Vec::with_capacity(1 + 1 + username.len() + 1 + password.len());
-        buf.push(consts::AUTH_VERSION);
-        buf.push(username.len() as u8);
-        buf.extend_from_slice(username.as_bytes());
-        buf.push(password.len() as u8);
-        buf.extend_from_slice(password.as_bytes());
+        let mut auth = Vec::with_capacity(1 + 1 + username.len() + 1 + password.len());
+        auth.push(consts::AUTH_VERSION);
+        auth.push(username.len() as u8);
+        auth.extend_from_slice(username.as_bytes());
+        auth.push(password.len() as u8);
+        auth.extend_from_slice(password.as_bytes());
 
-        stream.write_all(&buf).await?;
+        stream.write_all(&auth).await?;
 
         let mut buf = [0; 2];
         stream.read_exact(&mut buf).await?;
@@ -61,11 +61,24 @@ async fn main() -> Result<(), AppError> {
             return Err(AppError::AuthFailed); 
         }
     }
-    
-    //connect
+
+    //auth
     let connect = &[
-        consts::NO_AUTH
+        consts::SOCKS_VERSION, consts::connect::CMD, consts::connect::RSV, consts::connect::ATYP_DOMAINNAME,
+        0x0b, // domain length: 11 bytes
+        b'h', b't', b't', b'p', b'b', b'i', b'n', b'.', b'o', b'r', b'g', // httpbin.org
+        0x01, 0xbb // port: 443
     ];
+
+    stream.write_all(connect).await?;
+
+    let mut buf = [0; 10];
+    stream.read_exact(&mut buf).await?;
+    trace!(?buf, "connect");
+
+    if buf[0] != consts::SOCKS_VERSION || buf[1] != consts::reply::SUCCESS { 
+        return Err(AppError::ConnectFailed); 
+    }
 
     Ok(())
 }

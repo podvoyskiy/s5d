@@ -3,7 +3,13 @@ pub const NO_AUTH: u8 = 0x00;
 pub const AUTH: u8 = 0x02;
 pub const AUTH_VERSION: u8 = 0x01;
 
-pub const CMD_CONNECT: u8 = 0x01;
+pub mod connect {
+    pub const CMD: u8 = 0x01;
+    pub const RSV: u8 = 0x00; // reserved (always 0)
+    pub const ATYP_IPV4: u8 = 0x01;
+    pub const ATYP_DOMAINNAME: u8 = 0x03;
+    pub const ATYP_IPV6: u8 = 0x04;
+}
 
 pub mod reply {
     pub const SUCCESS: u8 = 0x00;

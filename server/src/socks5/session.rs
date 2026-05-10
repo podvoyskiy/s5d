@@ -108,7 +108,7 @@ impl Socks5Session {
 
     fn handle_connect(&mut self, buf: &[u8]) -> Result<Vec<SocketAddr>, AppError> {
         trace!(buf, "handle_connect");
-        if buf.len() < 4 || buf[0] != consts::SOCKS_VERSION || buf[1] != consts::CMD_CONNECT { return Err(AppError::ConnectFailed); }
+        if buf.len() < 4 || buf[0] != consts::SOCKS_VERSION || buf[1] != consts::connect::CMD { return Err(AppError::ConnectFailed); }
         
         let atyp = Atyp::try_from(buf[3])?;
         let data = &buf.get(4..).ok_or(AppError::ConnectFailed)?;
