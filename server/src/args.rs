@@ -1,7 +1,5 @@
 use std::{env::args, net::Ipv4Addr, str::FromStr};
 
-use s5::utils;
-
 use crate::prelude::*;
 
 #[derive(Debug, PartialEq)]

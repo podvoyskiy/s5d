@@ -7,10 +7,10 @@ server-auth:
 	cargo run --bin s5d -- --auth admin:12345
 
 client:
-	cargo run --bin s5c
+	cargo run --bin s5d-client
 
 test:
-	cargo test -p s5d && cargo test -p s5
+	cargo test -p s5d && cargo test -p s5d-lib
 
 build:
 	cargo build --release --target x86_64-unknown-linux-musl

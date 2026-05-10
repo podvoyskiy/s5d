@@ -1,6 +1,6 @@
 [package]
-name = "s5c"
-version.workspace = true
+name = "s5d-client"
+version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
@@ -8,10 +8,10 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-s5 = { workspace = true }
+s5d-lib = { workspace = true }
 
 [[bin]]
-name = "s5c"
+name = "s5d-client"
 path = "src/main.rs"
 test = true
 

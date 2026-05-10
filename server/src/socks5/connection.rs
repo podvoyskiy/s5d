@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 
-use s5::consts;
 use crate::{prelude::*, socks5::{parse, atyp::Atyp, config::Socks5Config}};
 
 #[derive(Debug, PartialEq)]

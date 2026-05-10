@@ -83,28 +83,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "s5"
-version = "0.3.1"
-
-[[package]]
-name = "s5c"
-version = "0.3.1"
-dependencies = [
- "s5",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "s5d"
 version = "0.3.1"
 dependencies = [
- "s5",
+ "s5d-lib",
  "tokio",
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "s5d-client"
+version = "0.1.0"
+dependencies = [
+ "s5d-lib",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "s5d-lib"
+version = "0.1.0"
 
 [[package]]
 name = "sharded-slab"
