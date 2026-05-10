@@ -1,4 +1,11 @@
 [package]
 name = "s5d-lib"
 version = "0.1.0"
+description = "SOCKS5 library for s5d & s5d-client"
 edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+rust-version.workspace = true

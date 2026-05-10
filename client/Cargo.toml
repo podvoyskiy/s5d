@@ -1,7 +1,14 @@
 [package]
 name = "s5d-client"
 version = "0.1.0"
+description = "SOCKS5 client"
 edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 tokio = { workspace = true }

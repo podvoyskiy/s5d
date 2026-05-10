@@ -1,6 +1,7 @@
-use std::env::args;
+mod prelude;
 
-use s5d_lib::{AppError, utils};
+use prelude::*;
+use std::env::args;
 
 fn main() -> Result<(), AppError> {
     let test = utils::collect_args(args())?;
