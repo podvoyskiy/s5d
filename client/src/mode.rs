@@ -1,6 +1,6 @@
 use s5d_lib::AppError;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Mode {
     Cli,
     _Proxy,
