@@ -37,7 +37,11 @@ impl Arg {
                 .split_once(":")
                 .map(|(user, pass)| Self::Auth((user.to_string(), pass.to_string())))
                 .ok_or_else(|| AppError::Arguments(format!("invalid auth format: {value} (expected username:password)"))),
-            "--target" => Ok(Self::Target(value.into())), //TODO add validation
+            "--target" => {
+                utils::target_is_valid(value)
+                    .then(|| Self::Target(value.into()))
+                    .ok_or(AppError::Arguments(format!("invalid target: {value}")))
+            }
             _  => Err(AppError::Arguments(format!("unknown argument {key}")))
         }
     }

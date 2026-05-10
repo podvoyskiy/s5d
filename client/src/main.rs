@@ -68,7 +68,7 @@ async fn main() -> Result<(), AppError> {
     let domain = config.target.unwrap(); // httpbin.org
     connect.push(domain.len() as u8);
     connect.extend_from_slice(domain.as_bytes());
-    connect.extend_from_slice(&[0x01, 0xbb]); // port: 443 TODO парсить по протоколу или по порту через :
+    connect.extend_from_slice(&[0x01, 0xbb]); // port: 443
 
     stream.write_all(&connect).await?;
 

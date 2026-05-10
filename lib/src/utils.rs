@@ -1,3 +1,5 @@
+use std::net::IpAddr;
+
 use crate::AppError;
 
 pub fn collect_args<I, S>(iter: I) -> Result<Vec<(String, String)>, AppError>
@@ -18,6 +20,11 @@ where
             Ok((key.to_string(), value.to_string()))
         })
         .collect()
+}
+
+//TODO сделать и валидацию и сразу парсинг домена. убрав схему и получив порт + пока из-за точки даже невалдиный IP проходит
+pub fn target_is_valid(target: &str) -> bool {
+    target.parse::<IpAddr>().is_ok() || target.contains('.')
 }
 
 #[cfg(test)]
