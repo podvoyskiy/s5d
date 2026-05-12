@@ -19,9 +19,9 @@ async fn main() -> Result<(), AppError> {
 
     let config = Socks5Config::new()?;
 
-    info!(mode = ?config.mode, server = ?config.server, "socks5 client started");
+    info!(mode = ?config.mode, proxy = ?config.proxy, "socks5 client started");
 
-    let mut stream = TcpStream::connect(config.server).await.map_err(|_| AppError::TargetUnreachable)?;
+    let mut stream = TcpStream::connect(config.proxy).await.map_err(|_| AppError::TargetUnreachable)?;
 
     //handshake
     let mut methods = vec![consts::auth::NO_AUTH];

@@ -1,4 +1,4 @@
-.PHONY: server server-auth client test test-server test-client test-lib build
+.PHONY: server server-auth client client-cli test test-server test-client test-lib build
 
 server:
 	cargo run --bin s5d
@@ -8,6 +8,9 @@ server-auth:
 
 client:
 	cargo run --bin s5d-client
+
+client-cli:
+	cargo run --bin s5d-client -- --target httpbin.org
 
 test: test-server test-client test-lib
 
@@ -26,6 +29,7 @@ build:
 s: server
 sa: server-auth
 c: client
+cc: client-cli
 t: test
 ts: test-server
 tc: test-client
