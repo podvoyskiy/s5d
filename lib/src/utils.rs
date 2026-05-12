@@ -1,5 +1,7 @@
 use std::net::IpAddr;
 
+use url::Url;
+
 use crate::AppError;
 
 pub fn collect_args<I, S>(iter: I) -> Result<Vec<(String, String)>, AppError>
@@ -22,9 +24,25 @@ where
         .collect()
 }
 
-//TODO сделать и валидацию и сразу парсинг домена. убрав схему и получив порт + пока из-за точки даже невалдиный IP проходит
 pub fn target_is_valid(target: &str) -> bool {
-    target.parse::<IpAddr>().is_ok() || target.contains('.')
+    target.parse::<IpAddr>().is_ok() || self::parse_url(target).is_ok()
+}
+
+pub fn parse_url(target: &str) -> Result<(String, u16), AppError> {
+    let url = Url::parse(target).map_err(|_| AppError::InvalidDomain)?;
+
+    let host = url.host_str().ok_or(AppError::InvalidDomain)?.to_string();
+
+    let port = match url.port() {
+        Some(p) => p,
+        None => match url.scheme() {
+            "https" => 443,
+            "http" => 80,
+            _ => return Err(AppError::InvalidDomain),
+        },
+    };
+
+    Ok((host, port))
 }
 
 #[cfg(test)]
@@ -41,5 +59,20 @@ mod test {
     fn test_missing_value() {
         let args = vec!["program", "--key"];
         assert!(collect_args(args).is_err());
+    }
+
+    #[test]
+    fn test_target_is_valid() {
+        assert!(target_is_valid("127.0.0.1"));
+        assert!(target_is_valid("https://example.com"));
+        assert!(target_is_valid("https://sub.domain.com:8080"));
+
+        assert!(!target_is_valid("not-a-url"));
+        assert!(!target_is_valid("ftp://example.com"));
+        assert!(!target_is_valid("https://"));
+
+        let (host, port) = parse_url("https://api.example.com/some/path").unwrap();
+        assert_eq!(host, "api.example.com");
+        assert_eq!(port, 443);
     }
 }

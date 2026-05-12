@@ -9,3 +9,6 @@ repository.workspace = true
 readme.workspace = true
 keywords.workspace = true
 rust-version.workspace = true
+
+[dependencies]
+url = "2.5.8"
