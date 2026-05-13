@@ -65,10 +65,10 @@ async fn main() -> Result<(), AppError> {
     //connect
     //TODO днс резолвинг будет и тут. вынести в lib
     let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV, consts::connect::ATYP_DOMAINNAME];
-    let domain = config.target.unwrap(); // httpbin.org
+    let (domain, port) = utils::parse_url(&config.target.unwrap())?;
     connect.push(domain.len() as u8);
     connect.extend_from_slice(domain.as_bytes());
-    connect.extend_from_slice(&[0x01, 0xbb]); // port: 443
+    connect.extend(port.to_be_bytes());
 
     stream.write_all(&connect).await?;
 

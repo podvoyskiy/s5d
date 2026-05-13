@@ -10,7 +10,7 @@ client:
 	cargo run --bin s5d-client
 
 client-cli:
-	cargo run --bin s5d-client -- --target httpbin.org
+	cargo run --bin s5d-client -- --target https://httpbin.org
 
 test: test-server test-client test-lib
 
