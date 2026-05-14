@@ -4,6 +4,7 @@ mod mode;
 mod socks5;
 
 use prelude::*;
+use s5d_lib::atyp::Atyp;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 use tracing::Level;
 use tracing_subscriber::fmt;
@@ -65,7 +66,12 @@ async fn main() -> Result<(), AppError> {
     //connect
     //TODO днс резолвинг будет и тут. вынести в lib
     let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV, consts::connect::ATYP_DOMAINNAME];
-    let (domain, port) = utils::parse_url(&config.target.unwrap())?;
+
+    let target_str = config.target.as_ref().unwrap();
+    let _atyp: Atyp = target_str.parse()?;
+    println!("{:?}", _atyp);
+
+    let (domain, port) = utils::parse_url(target_str)?;
     connect.push(domain.len() as u8);
     connect.extend_from_slice(domain.as_bytes());
     connect.extend(port.to_be_bytes());
