@@ -65,7 +65,7 @@ async fn main() -> Result<(), AppError> {
 
     //connect
     //TODO днс резолвинг будет и тут. вынести в lib
-    let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV, consts::connect::ATYP_DOMAINNAME];
+    let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV];
 
     let atyp: Atyp = config.target.as_ref().unwrap().parse()?;
     println!("{:?}", atyp);
