@@ -3,7 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
 use crate::{prelude::*};
 
 #[repr(u8)]
-pub enum Atyp { //TODO скорее всего будет единый в lib
+pub enum Atyp { //TODO скорее всего будет единый в lib. тесты перенести потом тоже 
     IpV4 = consts::connect::ATYP_IPV4,
     DomainName = consts::connect::ATYP_DOMAINNAME,
     Ipv6 = consts::connect::ATYP_IPV6

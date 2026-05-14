@@ -250,6 +250,7 @@ dependencies = [
 name = "s5d-lib"
 version = "0.1.0"
 dependencies = [
+ "tracing",
  "url",
 ]
 
