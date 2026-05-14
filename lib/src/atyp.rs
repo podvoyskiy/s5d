@@ -100,3 +100,46 @@ impl FromStr for Atyp {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_from_str() {
+        assert!(Atyp::from_str("127.0.0.1:80").is_ok());
+        assert!(Atyp::from_str("2001:4860:4860::8888:53").is_ok()); //TODO
+        assert!(Atyp::from_str("https://example.com").is_ok());
+        assert!(Atyp::from_str("https://examplecom").is_err()); //TODO
+    }
+
+    #[test]
+    fn test_from_bytes_ipv4() {
+        // IPv4: 8.8.8.8:53 (Google DNS)
+        let buf = &[consts::connect::ATYP_IPV4, 0x08, 0x08, 0x08, 0x08, 0x00, 0x35];
+        assert!(Atyp::from_bytes(buf.to_vec()).is_ok());
+    }
+
+    #[test]
+    fn test_from_bytes_ipv6() {
+        // IPv6: 2001:4860:4860::8888:53 (Google DNS)
+        let buf = &[
+            consts::connect::ATYP_IPV6,
+            0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00, 
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88, 
+            0x00, 0x35
+        ];
+        assert!(Atyp::from_bytes(buf.to_vec()).is_ok());
+    }
+
+    #[test]
+    fn test_from_bytes_domain_name() {
+        let buf = &[
+            consts::connect::ATYP_DOMAINNAME,
+            0x0a, // domain length: 10 bytes
+            b'g', b'o', b'o', b'g', b'l', b'e', b'.', b'c', b'o', b'm', // google.com
+            0x01, 0xbb // port: 443
+        ];
+        assert!(Atyp::from_bytes(buf.to_vec()).is_ok());
+    }
+}

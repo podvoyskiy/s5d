@@ -67,36 +67,3 @@ impl TryFrom<u8> for Atyp {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_parse_addrs_ipv4() {
-        // IPv4: 8.8.8.8:53 (Google DNS)
-        let buf = &[0x08, 0x08, 0x08, 0x08, 0x00, 0x35];
-        assert!(Atyp::IpV4.parse_addrs(buf).is_ok());
-    }
-
-    #[test]
-    fn test_parse_addrs_domain_name() {
-        let buf = &[
-            0x0a, // domain length: 10 bytes
-            b'g', b'o', b'o', b'g', b'l', b'e', b'.', b'c', b'o', b'm', // google.com
-            0x01, 0xbb // port: 443
-        ];
-        assert!(Atyp::DomainName.parse_addrs(buf).is_ok());
-    }
-
-    #[test]
-    fn test_parse_addrs_ipv6() {
-        // IPv6: 2001:4860:4860::8888:53 (Google DNS)
-        let buf = &[
-            0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00, 
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88, 
-            0x00, 0x35
-        ];
-        assert!(Atyp::Ipv6.parse_addrs(buf).is_ok());
-    }
-}
