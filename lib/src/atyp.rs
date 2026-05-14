@@ -47,36 +47,35 @@ impl Atyp {
         }
     }
 
-    pub fn from_bytes(buf: &[u8]) ->Result<Self, AppError> {
-        match buf.first() {
-            Some(&consts::connect::ATYP_DOMAINNAME) => {
+    pub fn from_bytes(mut buf: Vec<u8>) ->Result<Self, AppError> {
+        let atyp = buf.remove(0);
+
+        match atyp {
+            consts::connect::ATYP_DOMAINNAME => {
                 // 1 byte is domain length, followed by the domain, then 2 bytes for the port
-                // let domain_len = *buf.get(1).ok_or(AppError::InvalidDomain)? as usize;
-                // let domain_bytes = buf.get(2..2 + domain_len).ok_or(AppError::InvalidDomain)?;
-                // let port_bytes = buf.get(1 + domain_len..1 + domain_len + 2).ok_or(AppError::InvalidDomain)?;
+                let domain_len = *buf.first().ok_or(AppError::InvalidDomain)? as usize;
+                let domain_bytes = buf.get(1..1 + domain_len).ok_or(AppError::InvalidDomain)?;
+                let port_bytes = buf.get(1 + domain_len..1 + domain_len + 2).ok_or(AppError::InvalidDomain)?;
 
-                // let domain = String::from_utf8_lossy(domain_bytes);
-                // let port = u16::from_be_bytes([port_bytes[0], port_bytes[1]]);
+                let domain = String::from_utf8_lossy(domain_bytes);
+                let port = u16::from_be_bytes([port_bytes[0], port_bytes[1]]);
 
-                // debug!(%domain, port, "resolving domain name");
+                debug!(%domain, port, "resolving domain name");
 
-                // let addrs = (domain.as_ref(), port).to_socket_addrs().map_err(|_| AppError::InvalidDomain)?;
-
-                // Ok(addrs.collect())
-                Ok(Self::Domain(("ddd".to_string(), 12)))
+                Ok(Self::Domain((domain.to_string(), port)))
             },
-            Some(&consts::connect::ATYP_IPV4) => {
-                if buf.len() != 7 { return Err(AppError::InvalidIpv4); }
+            consts::connect::ATYP_IPV4 => {
+                if buf.len() != 6 { return Err(AppError::InvalidIpv4); }
 
-                let ip = Ipv4Addr::new(buf[1], buf[2], buf[3], buf[4]);
-                let port = u16::from_be_bytes([buf[5], buf[6]]);
+                let ip = Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]);
+                let port = u16::from_be_bytes([buf[4], buf[5]]);
                 Ok(Self::Ipv4(SocketAddrV4::new(ip, port)))
             },
-            Some(&consts::connect::ATYP_IPV6) => {
-                if buf.len() != 19 { return Err(AppError::InvalidIpv6); }
+            consts::connect::ATYP_IPV6 => {
+                if buf.len() != 18 { return Err(AppError::InvalidIpv6); }
 
-                let ip_bytes: [u8; 16] = buf[1..17].try_into().map_err(|_| AppError::InvalidIpv6)?;
-                let port = u16::from_be_bytes([buf[17], buf[18]]);
+                let ip_bytes: [u8; 16] = buf[0..16].try_into().map_err(|_| AppError::InvalidIpv6)?;
+                let port = u16::from_be_bytes([buf[16], buf[17]]);
                 Ok(Self::Ipv6(SocketAddrV6::new(Ipv6Addr::from(ip_bytes), port, 0, 0)))
             },
             _ => Err(AppError::InvalidAtyp)
@@ -97,7 +96,7 @@ impl FromStr for Atyp {
 
         match utils::parse_url(s) {
             Ok((host, port)) => Ok(Atyp::Domain((host, port))),
-            Err(_) => Err(AppError::InvalidDomain),
+            Err(_) => Err(AppError::InvalidAtyp),
         }
     }
 }
