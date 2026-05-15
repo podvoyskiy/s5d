@@ -3,12 +3,12 @@ use std::net::SocketAddr;
 use crate::prelude::*;
 use crate::args::Arg;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Socks5Config {
     pub mode: Mode,
     pub proxy: SocketAddr,
     pub auth: Option<(String, String)>,
-    pub target: Option<String>
+    pub target: Option<Atyp>
 }
 
 impl Default for Socks5Config  {

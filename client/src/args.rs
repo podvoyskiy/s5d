@@ -8,7 +8,7 @@ pub enum Arg {
     Mode(Mode),
     Proxy(SocketAddr),
     Auth((String, String)),
-    Target(String)
+    Target(Atyp)
 }
 
 impl Arg {
@@ -32,16 +32,16 @@ impl Arg {
             "--mode"   => Ok(Self::Mode(Mode::try_from(value)?)),
             "--proxy" => SocketAddr::from_str(value)
                 .map(Self::Proxy)
-                .map_err(|_| AppError::Arguments("invalid socket addr".into())),
+                .map_err(|_| AppError::Arguments("invalid proxy addr".into())),
             "--auth" => value
                 .split_once(":")
                 .map(|(user, pass)| Self::Auth((user.to_string(), pass.to_string())))
                 .ok_or_else(|| AppError::Arguments(format!("invalid auth format: {value} (expected username:password)"))),
             "--target" => {
-                utils::target_is_valid(value)
-                    .then(|| Self::Target(value.into()))
-                    .ok_or(AppError::Arguments(format!("invalid target: {value}")))
-            }
+                Atyp::from_str(value)
+                    .map(Self::Target)
+                    .map_err(|_| AppError::Arguments(format!("invalid target: {value}")))
+            },
             _  => Err(AppError::Arguments(format!("unknown argument {key}")))
         }
     }

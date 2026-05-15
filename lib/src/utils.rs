@@ -1,5 +1,3 @@
-use std::net::IpAddr;
-
 use url::Url;
 
 use crate::AppError;
@@ -22,10 +20,6 @@ where
             Ok((key.to_string(), value.to_string()))
         })
         .collect()
-}
-
-pub fn target_is_valid(target: &str) -> bool {
-    target.parse::<IpAddr>().is_ok() || self::parse_url(target).is_ok()
 }
 
 pub fn parse_url(target: &str) -> Result<(String, u16), AppError> {
@@ -59,20 +53,5 @@ mod test {
     fn test_missing_value() {
         let args = vec!["program", "--key"];
         assert!(collect_args(args).is_err());
-    }
-
-    #[test]
-    fn test_target_is_valid() {
-        assert!(target_is_valid("127.0.0.1"));
-        assert!(target_is_valid("https://example.com"));
-        assert!(target_is_valid("https://sub.domain.com:8080"));
-
-        assert!(!target_is_valid("not-a-url"));
-        assert!(!target_is_valid("ftp://example.com"));
-        assert!(!target_is_valid("https://"));
-
-        let (host, port) = parse_url("https://api.example.com/some/path").unwrap();
-        assert_eq!(host, "api.example.com");
-        assert_eq!(port, 443);
     }
 }

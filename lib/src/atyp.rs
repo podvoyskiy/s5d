@@ -4,7 +4,7 @@ use tracing::debug;
 
 use crate::{AppError, consts, utils};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Atyp {
     Domain((String, u16)),
     Ipv4(SocketAddrV4),
@@ -108,9 +108,12 @@ mod test {
     #[test]
     fn test_from_str() {
         assert!(Atyp::from_str("127.0.0.1:80").is_ok());
-        assert!(Atyp::from_str("2001:4860:4860::8888:53").is_ok()); //TODO
+        assert!(Atyp::from_str("[2001:4860:4860::8888]:53").is_ok());
         assert!(Atyp::from_str("https://example.com").is_ok());
-        assert!(Atyp::from_str("https://examplecom").is_err()); //TODO
+        assert!(Atyp::from_str("https://api.example.com/some/path").is_ok());
+        assert!(Atyp::from_str("http://sub.domain.com:8080").is_ok());
+        assert!(Atyp::from_str("https://").is_err());
+        assert!(Atyp::from_str("invalid host").is_err());
     }
 
     #[test]

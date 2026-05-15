@@ -4,7 +4,6 @@ mod mode;
 mod socks5;
 
 use prelude::*;
-use s5d_lib::atyp::Atyp;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 use tracing::Level;
 use tracing_subscriber::fmt;
@@ -66,11 +65,7 @@ async fn main() -> Result<(), AppError> {
     //connect
     //TODO днс резолвинг будет и тут. вынести в lib
     let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV];
-
-    let atyp: Atyp = config.target.as_ref().unwrap().parse()?;
-    println!("{:?}", atyp);
-
-    connect.extend_from_slice(&atyp.to_bytes());
+    connect.extend_from_slice(&config.target.as_ref().unwrap().to_bytes());
 
     stream.write_all(&connect).await?;
 
