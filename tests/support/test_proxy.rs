@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::process::{Command, Child};
 use std::net::TcpStream;
 use std::thread;

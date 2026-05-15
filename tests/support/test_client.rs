@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::process::{Command, Child};
 use std::thread;
 use std::time::Duration;
@@ -7,9 +9,10 @@ pub struct TestClient {
 }
 
 impl TestClient {
-    pub fn start(target: &str) -> Self {
+    pub fn start(proxy: &str, target: &str) -> Self {
         let child = 
             Command::new("./../target/debug/s5d-client")
+            .arg("--proxy").arg(proxy)
             .arg("--target").arg(target)
             .spawn().unwrap();
 
