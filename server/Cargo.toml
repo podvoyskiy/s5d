@@ -23,5 +23,5 @@ path = "src/main.rs"
 test = true
 
 [[test]]
-name = "integration"
-path = "../tests/integration.rs"
+name = "server"
+path = "../tests/server.rs"

@@ -10,8 +10,7 @@ pub struct TestProxy {
 
 impl TestProxy {
     pub fn start(port: u16, auth: Option<(String, String)>) -> Self {
-        let binary_path = std::env::var("CARGO_BIN_EXE_s5d").unwrap();
-        let mut cmd = Command::new(binary_path);
+        let mut cmd = Command::new("./../target/debug/s5d");
         cmd.arg("--port").arg(port.to_string());
 
         if let Some((user, pass)) = &auth {

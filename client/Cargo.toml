@@ -21,3 +21,7 @@ s5d-lib = { workspace = true }
 name = "s5d-client"
 path = "src/main.rs"
 test = true
+
+[[test]]
+name = "client"
+path = "../tests/client.rs"

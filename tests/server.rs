@@ -1,8 +1,8 @@
-mod common;
+mod support;
 
 use std::io::{Read, Write};
 
-use common::TestProxy;
+use crate::support::test_proxy::TestProxy;
 
 #[test]
 fn test_proxy_handshake() {
