@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 
-use crate::{prelude::*, socks5::{parse, atyp::Atyp, config::Socks5Config}};
+use crate::{prelude::*, socks5::{parse, config::Socks5Config}};
 
 #[derive(Debug, PartialEq)]
 enum Socks5State {
@@ -35,8 +35,8 @@ impl Socks5Session {
                         Socks5State::Handshake => self.handshake(&buf[..n]).await?,
                         Socks5State::Auth => self.auth(&buf[..n]).await?,
                         Socks5State::Connect => {
-                            let target_addrs = self.handle_connect(&buf[..n])?;
-                            self.connect_to_target(target_addrs).await?;
+                            let target_addr = self.handle_connect(&buf[..n])?;
+                            self.connect(target_addr).await?;
                         },
                         Socks5State::Tunneling => {
                             self.target.as_mut().unwrap().write_all(&buf[..n]).await?;
@@ -106,41 +106,36 @@ impl Socks5Session {
         Ok(())
     }
 
-    fn handle_connect(&mut self, buf: &[u8]) -> Result<Vec<SocketAddr>, AppError> {
+    fn handle_connect(&mut self, buf: &[u8]) -> Result<SocketAddr, AppError> {
         trace!(buf, "handle_connect");
         if buf.len() < 4 || buf[0] != consts::SOCKS_VERSION || buf[1] != consts::connect::CMD { return Err(AppError::ConnectFailed); }
-        
-        let atyp = Atyp::try_from(buf[3])?;
-        let data = &buf.get(4..).ok_or(AppError::ConnectFailed)?;
-        atyp.parse_addrs(data)
+
+        let atyp = Atyp::from_bytes(buf.get(3..).ok_or(AppError::ConnectFailed)?.to_vec())?;
+        atyp.to_socket_addr()
     }
 
-    async fn connect_to_target(&mut self, target_addrs: Vec<SocketAddr>) -> Result<(), AppError> {
-        for addr in target_addrs {
-            let stream = TcpStream::connect(addr).await;
-            if stream.is_err() { continue; }
-
-            self.target = Some(stream.unwrap());
-            info!(target = ?addr, "connected to");
-            
-            let mut response = Vec::with_capacity(10);
-            response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::RSV]);
-            response.push(if addr.is_ipv4() { Atyp::IpV4 as u8 } else { Atyp::Ipv6 as u8 });
-            response.extend(parse::addr_to_bytes(self.target.as_ref().unwrap())?);
-
-            self.state = Socks5State::Tunneling;
-            self.client.as_mut().unwrap().write_all(&response).await?;
-            return Ok(());
-        }
-
-        warn!("failed to connect to any target address");
+    async fn connect(&mut self, target_addr: SocketAddr) -> Result<(), AppError> {
+        let stream = TcpStream::connect(target_addr).await?;
+        self.target = Some(stream);
+        info!(target = ?target_addr, "connected to");
 
         let mut response = Vec::with_capacity(10);
-        response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::RSV, Atyp::IpV4 as u8]);
-        response.extend_from_slice(consts::reply::BND_ADDR);
-        response.extend_from_slice(consts::reply::BND_PORT);
+        response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::RSV]);
+        response.push(if target_addr.is_ipv4() { consts::connect::ATYP_IPV4 } else { consts::connect::ATYP_IPV6 });
+        response.extend(parse::addr_to_bytes(self.target.as_ref().unwrap())?);
 
+        self.state = Socks5State::Tunneling;
         self.client.as_mut().unwrap().write_all(&response).await?;
-        Err(AppError::TargetUnreachable)
+        Ok(())
+
+        // warn!("failed to connect to any target address");
+
+        // let mut response = Vec::with_capacity(10);
+        // response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::RSV, consts::connect::ATYP_IPV4]); //TODO v4? или что?
+        // response.extend_from_slice(consts::reply::BND_ADDR);
+        // response.extend_from_slice(consts::reply::BND_PORT);
+
+        // self.client.as_mut().unwrap().write_all(&response).await?;
+        // Err(AppError::TargetUnreachable)
     }
 }

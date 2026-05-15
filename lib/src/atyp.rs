@@ -1,4 +1,4 @@
-use std::{net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6}, str::FromStr};
+use std::{net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs}, str::FromStr};
 
 use tracing::debug;
 
@@ -44,6 +44,17 @@ impl Atyp {
                 bytes.extend(socket_addr.port().to_be_bytes());
                 bytes
             },
+        }
+    }
+
+    pub fn to_socket_addr(&self) -> Result<SocketAddr, AppError> {
+        match self {
+            Atyp::Domain((host, port)) => {
+                let addrs = (host.as_str(), *port).to_socket_addrs().map_err(|_| AppError::InvalidDomain)?;
+                addrs.into_iter().next().ok_or(AppError::TargetUnreachable)
+            },
+            Atyp::Ipv4(socket_addr_v4) => Ok(SocketAddr::V4(*socket_addr_v4)),
+            Atyp::Ipv6(socket_addr_v6) => Ok(SocketAddr::V6(*socket_addr_v6)),
         }
     }
 
