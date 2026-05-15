@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 
 use crate::{prelude::*, socks5::{parse, config::Socks5Config}};
@@ -24,7 +23,7 @@ impl Socks5Session {
         Self { config, state: Socks5State::Handshake, client: Some(client), target: None }
     }
 
-    pub async fn serve(&mut self) -> Result<(), AppError> {
+    pub async fn start(&mut self) -> Result<(), AppError> {
         let mut buf = [0; 4096];
 
         loop {
@@ -34,30 +33,9 @@ impl Socks5Session {
                     match self.state {
                         Socks5State::Handshake => self.handshake(&buf[..n]).await?,
                         Socks5State::Auth => self.auth(&buf[..n]).await?,
-                        Socks5State::Connect => {
-                            let target_addr = self.handle_connect(&buf[..n])?;
-                            self.connect(target_addr).await?;
-                        },
+                        Socks5State::Connect => self.connect(&buf[..n]).await?,
                         Socks5State::Tunneling => {
-                            self.target.as_mut().unwrap().write_all(&buf[..n]).await?;
-                            
-                            let (mut client_r, mut client_w) = self.client.take().unwrap().into_split();
-                            let (mut target_r, mut target_w) = self.target.take().unwrap().into_split();
-
-                            let client_to_target = tokio::spawn(async move {
-                                if let Err(e) = tokio::io::copy(&mut client_r, &mut target_w).await {
-                                    debug!("client->target copy error: {}", e)   
-                                }
-                            });
-
-                            let target_to_client = tokio::spawn(async move {
-                                if let Err(e) = tokio::io::copy(&mut target_r, &mut client_w).await {
-                                    debug!("target->client copy error: {}", e)   
-                                }
-                            });
-
-                            let _ = tokio::join!(client_to_target, target_to_client);
-
+                            self.tunneling(&buf[..n]).await?;
                             break;
                         },
                     }
@@ -106,36 +84,63 @@ impl Socks5Session {
         Ok(())
     }
 
-    fn handle_connect(&mut self, buf: &[u8]) -> Result<SocketAddr, AppError> {
-        trace!(buf, "handle_connect");
+    async fn connect(&mut self, buf: &[u8]) -> Result<(), AppError> {
+        trace!(buf, "connect");
         if buf.len() < 4 || buf[0] != consts::SOCKS_VERSION || buf[1] != consts::connect::CMD { return Err(AppError::ConnectFailed); }
 
         let atyp = Atyp::from_bytes(buf.get(3..).ok_or(AppError::ConnectFailed)?.to_vec())?;
-        atyp.to_socket_addr()
-    }
-
-    async fn connect(&mut self, target_addr: SocketAddr) -> Result<(), AppError> {
-        let stream = TcpStream::connect(target_addr).await?;
-        self.target = Some(stream);
-        info!(target = ?target_addr, "connected to");
+        let target_addr = atyp.to_socket_addr();
 
         let mut response = Vec::with_capacity(10);
-        response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::RSV]);
-        response.push(if target_addr.is_ipv4() { consts::connect::ATYP_IPV4 } else { consts::connect::ATYP_IPV6 });
-        response.extend(parse::addr_to_bytes(self.target.as_ref().unwrap())?);
 
-        self.state = Socks5State::Tunneling;
-        self.client.as_mut().unwrap().write_all(&response).await?;
+        match target_addr {
+            Ok(target_addr) => {
+                let stream = TcpStream::connect(target_addr).await?;
+                self.target = Some(stream);
+
+                info!(target = ?target_addr, "connected to");
+                
+                response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::SUCCESS, consts::RSV]);
+                response.push(if target_addr.is_ipv4() { consts::connect::ATYP_IPV4 } else { consts::connect::ATYP_IPV6 });
+                response.extend(parse::addr_to_bytes(self.target.as_ref().unwrap())?);
+
+                self.state = Socks5State::Tunneling;
+
+                self.client.as_mut().unwrap().write_all(&response).await?;
+                Ok(())
+            },
+            Err(_) => {
+                warn!("failed to connect to any target address");
+
+                response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::RSV, consts::connect::ATYP_IPV4]);
+                response.extend_from_slice(consts::reply::BND_ADDR);
+                response.extend_from_slice(consts::reply::BND_PORT);
+
+                self.client.as_mut().unwrap().write_all(&response).await?;
+                Err(AppError::TargetUnreachable)
+            },
+        }
+    }
+
+    async fn tunneling(&mut self, buf: &[u8]) -> Result<(), AppError> {
+        self.target.as_mut().unwrap().write_all(buf).await?;
+                            
+        let (mut client_r, mut client_w) = self.client.take().unwrap().into_split();
+        let (mut target_r, mut target_w) = self.target.take().unwrap().into_split();
+
+        let client_to_target = tokio::spawn(async move {
+            if let Err(e) = tokio::io::copy(&mut client_r, &mut target_w).await {
+                debug!("client->target copy error: {e}")   
+            }
+        });
+
+        let target_to_client = tokio::spawn(async move {
+            if let Err(e) = tokio::io::copy(&mut target_r, &mut client_w).await {
+                debug!("target->client copy error: {e}")   
+            }
+        });
+
+        let _ = tokio::join!(client_to_target, target_to_client);
         Ok(())
-
-        // warn!("failed to connect to any target address");
-
-        // let mut response = Vec::with_capacity(10);
-        // response.extend_from_slice(&[consts::SOCKS_VERSION, consts::reply::FAILURE, consts::RSV, consts::connect::ATYP_IPV4]); //TODO v4? или что?
-        // response.extend_from_slice(consts::reply::BND_ADDR);
-        // response.extend_from_slice(consts::reply::BND_PORT);
-
-        // self.client.as_mut().unwrap().write_all(&response).await?;
-        // Err(AppError::TargetUnreachable)
     }
 }

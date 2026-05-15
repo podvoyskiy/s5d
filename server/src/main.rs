@@ -33,7 +33,7 @@ async fn main() -> Result<(), AppError> {
         info!(%client_addr, "new connection");
         tokio::spawn(async move {
             let mut session = Socks5Session::new(config, stream);
-            if let Err(error) = session.serve().await {
+            if let Err(error) = session.start().await {
                 error!(%error, %client_addr);
             }
             info!(%client_addr, "connection closed");
