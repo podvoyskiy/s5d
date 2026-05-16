@@ -18,7 +18,8 @@ async fn main() -> Result<(), AppError> {
         .with_max_level(Level::TRACE)
         .init();
 
-    let config = Socks5Config::new()?;
+    let mut config = Socks5Config::new()?;
+    config.validate()?;
 
     info!(mode = ?config.mode, proxy = ?config.proxy, "socks5 client started");
 

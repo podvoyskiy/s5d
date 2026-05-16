@@ -9,8 +9,8 @@ pub struct Socks5Config {
     pub mode: Mode,
     pub proxy: SocketAddr,
     pub auth: Option<(String, String)>,
-
-    pub target: Option<Atyp>, //TODO может тоже в http перенести
+    //for cli mode
+    pub target: Option<Atyp>,
     pub http: Option<Http>,
 }
 
@@ -34,11 +34,15 @@ impl Socks5Config {
             }
         }
 
-        if config.mode == Mode::Cli {
-            if config.target.is_none() { return Err(AppError::Arguments("missed param --target".into())); }
-            if config.http.is_none() { config.http = Some(Http::default()) }
+        Ok(config)
+    }
+
+    pub fn validate(&mut self) -> Result<(), AppError> {
+        if self.mode == Mode::Cli {
+            if self.target.is_none() { return Err(AppError::Arguments("missed param --target".into())); }
+            if self.http.is_none() { self.http = Some(Http::default()) }
         }
         
-        Ok(config)
+        Ok(())
     }
 }
