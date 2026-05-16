@@ -1,6 +1,7 @@
-use crate::http::{_Data, Method};
+use crate::http::{Data, Method};
 
+#[derive(Debug)]
 pub struct _Http {
-    method: Method,
-    data: Option<_Data>
+    pub method: Method,
+    pub data: Option<Data>
 }

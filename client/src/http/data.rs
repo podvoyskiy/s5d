@@ -1,3 +1,4 @@
-pub struct _Data {
+#[derive(Debug)]
+pub struct Data {
 
 }
