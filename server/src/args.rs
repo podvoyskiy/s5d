@@ -3,7 +3,7 @@ use std::{env::args, net::Ipv4Addr, str::FromStr};
 use crate::prelude::*;
 
 #[derive(Debug, PartialEq)]
-pub enum Arg {
+pub enum Arg { //TODO тоже убрать по аналогии с клиентом
     Host(Ipv4Addr),
     Port(u16),
     Auth((String, String))

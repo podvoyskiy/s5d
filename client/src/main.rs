@@ -1,5 +1,4 @@
 mod prelude;
-mod args;
 mod mode;
 mod socks5;
 mod http;
