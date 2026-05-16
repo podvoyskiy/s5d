@@ -2,6 +2,7 @@ mod prelude;
 mod args;
 mod mode;
 mod socks5;
+mod http;
 
 use prelude::*;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};

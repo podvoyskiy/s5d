@@ -14,6 +14,8 @@ pub enum AppError {
     InvalidIpv4,
     InvalidIpv6,
     TargetUnreachable,
+
+    InvalidHttpMethod,
 }
 
 impl Debug for AppError {
@@ -36,6 +38,7 @@ impl Display for AppError {
             AppError::InvalidIpv4 => "socks5 invalid ipv4".red(),
             AppError::InvalidIpv6 => "socks5 invalid ipv6".red(),
             AppError::TargetUnreachable => "socks5 target unreachable".red(),
+            AppError::InvalidHttpMethod => "socks5 invalid http method".red(),
         };
         write!(f, "{message}")
     }
