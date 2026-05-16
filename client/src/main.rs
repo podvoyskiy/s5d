@@ -64,7 +64,6 @@ async fn main() -> Result<(), AppError> {
     }
 
     //connect
-    //TODO днс резолвинг будет и тут. вынести в lib
     let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV];
     connect.extend_from_slice(&config.target.as_ref().unwrap().to_bytes());
 

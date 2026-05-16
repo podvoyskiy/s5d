@@ -1,6 +1,5 @@
-pub mod http;
+mod http;
 mod method;
-mod data;
 
-pub use crate::http::data::Data;
+pub use crate::http::http::Http;
 pub use crate::http::method::Method;

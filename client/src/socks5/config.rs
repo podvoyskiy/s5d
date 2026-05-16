@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 
-use crate::http::Method;
-use crate::http::http::_Http;
+use crate::http::Http;
 use crate::prelude::*;
 use crate::args::Arg;
 
@@ -12,7 +11,7 @@ pub struct Socks5Config {
     pub auth: Option<(String, String)>,
 
     pub target: Option<Atyp>, //TODO может тоже в http перенести
-    pub http: Option<_Http>,
+    pub http: Option<Http>,
 }
 
 impl Default for Socks5Config  {
@@ -31,13 +30,13 @@ impl Socks5Config {
                 Arg::Proxy(addr) => config.proxy = addr,
                 Arg::Auth(auth) => config.auth = Some(auth),
                 Arg::Target(target) => config.target = Some(target),
-                Arg::Method(method) => config.http = Some(_Http { method, data: None }),
+                Arg::Method(method) => config.http = Some(Http { method, data: None, headers: None }),
             }
         }
 
         if config.mode == Mode::Cli {
             if config.target.is_none() { return Err(AppError::Arguments("missed param --target".into())); }
-            if config.http.is_none() { config.http = Some(_Http { method: Method::GET, data: None }) }
+            if config.http.is_none() { config.http = Some(Http::default()) }
         }
         
         Ok(config)
