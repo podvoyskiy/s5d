@@ -3,14 +3,14 @@ use std::str::FromStr;
 use s5d_lib::AppError;
 
 #[derive(Debug, PartialEq)]
-pub enum HttpMethod {
+pub enum Method {
     GET,
     POST,
     PUT,
     DELETE
 }
 
-impl FromStr for HttpMethod {
+impl FromStr for Method {
     type Err = AppError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

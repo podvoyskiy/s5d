@@ -1,7 +1,7 @@
 use std::{env::args, str::FromStr};
 use std::net::SocketAddr;
 
-use crate::http::method::HttpMethod;
+use crate::http::Method;
 use crate::{mode::Mode, prelude::*};
 
 #[derive(Debug, PartialEq)]
@@ -11,7 +11,7 @@ pub enum Arg {
     Auth((String, String)),
 
     Target(Atyp),
-    Method(HttpMethod)
+    Method(Method)
 }
 
 impl Arg {
@@ -46,7 +46,7 @@ impl Arg {
                     .map(Self::Target)
                     .map_err(|_| AppError::Arguments(format!("invalid target: {value}")))
             },
-            "--method" => value.parse::<HttpMethod>().map(Self::Method),
+            "--method" => value.parse::<Method>().map(Self::Method),
             _  => Err(AppError::Arguments(format!("unknown argument {key}")))
         }
     }
