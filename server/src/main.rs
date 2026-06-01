@@ -11,10 +11,7 @@ use crate::socks5::{config::Socks5Config, session::Socks5Session};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    fmt()
-        .with_target(false)
-        .with_max_level(Level::TRACE)
-        .init();
+    setup_tracing();
 
     let mut config = Socks5Config::new()?;
     config.validate()?;
@@ -36,4 +33,20 @@ async fn main() -> Result<(), AppError> {
             info!(%client_addr, "connection closed");
         });
     }
+}
+
+#[cfg(debug_assertions)]
+fn setup_tracing() {
+    fmt()
+        .with_target(false)
+        .with_max_level(Level::TRACE)
+        .init();
+}
+
+#[cfg(not(debug_assertions))]
+fn setup_tracing() {
+    fmt()
+        .with_target(false)
+        .with_max_level(Level::INFO)
+        .init();
 }

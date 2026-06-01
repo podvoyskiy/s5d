@@ -1,6 +1,6 @@
 [package]
 name = "s5d-client"
-version = "0.1.0"
+version = "0.1.1"
 description = "SOCKS5 client for s5d crate"
 edition.workspace = true
 authors.workspace = true

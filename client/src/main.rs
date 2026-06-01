@@ -7,17 +7,14 @@ mod http;
 
 use prelude::*;
 use tokio::net::TcpStream;
-use tracing::Level;
 use tracing_subscriber::fmt;
+use tracing_subscriber::EnvFilter;
 
 use crate::socks5::{config::Socks5Config, session::Socks5Session};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    fmt()
-        .with_target(false)
-        .with_max_level(Level::TRACE)
-        .init();
+    setup_tracing();
 
     let mut config = Socks5Config::new()?;
     config.validate()?;
@@ -36,4 +33,26 @@ async fn main() -> Result<(), AppError> {
     }
     session.connect().await?;
     session.send().await
+}
+
+#[cfg(debug_assertions)]
+fn setup_tracing() {
+    fmt()
+        .with_target(false)
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("rustls=warn,s5d_client=trace"))
+        )
+        .init();
+}
+
+#[cfg(not(debug_assertions))]
+fn setup_tracing() {
+    fmt()
+        .with_target(false)
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("rustls=error,s5d_client=info"))
+        )
+        .init();
 }
