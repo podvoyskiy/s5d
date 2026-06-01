@@ -21,8 +21,8 @@ jobs:
         toolchain: 1.95.0
         target: x86_64-unknown-linux-musl
     
-    - name: Build Linux binary
-      run: cargo build --release --target x86_64-unknown-linux-musl
+    - name: Build s5d binary
+      run: cargo build --release -p s5d --target x86_64-unknown-linux-musl
 
     - name: Strip Linux binary
       run: strip target/x86_64-unknown-linux-musl/release/s5d

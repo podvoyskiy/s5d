@@ -1,0 +1,30 @@
+[package]
+name = "s5d-client"
+version = "0.1.0"
+description = "SOCKS5 client for s5d crate"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+s5d-lib = { workspace = true }
+tokio-rustls = "0.26.4"
+rustls = "0.23.40"
+webpki-roots = "1.0.7"
+
+[[bin]]
+name = "s5d-client"
+path = "src/main.rs"
+test = true
+
+[[test]]
+name = "client"
+path = "../tests/client.rs"

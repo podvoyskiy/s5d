@@ -1,37 +1,8 @@
-use std::{io::{Read, Write}, net::TcpStream, process::{Child, Command}, thread, time::Duration};
+mod support;
 
-struct TestProxy {
-    child: Child,
-    port: u16,
-}
+use std::io::{Read, Write};
 
-impl TestProxy {
-    fn start(port: u16, auth: Option<(String, String)>) -> Self {
-        let mut cmd = Command::new("./target/debug/s5d");
-        cmd.arg("--port").arg(port.to_string());
-
-        if let Some((user, pass)) = &auth {
-            cmd.arg("--auth").arg(format!("{user}:{pass}"));
-        }
-
-        let child = cmd.spawn().unwrap();
-
-        thread::sleep(Duration::from_millis(200));
-
-        Self { child, port }
-    }
-
-    fn client(&self) -> TcpStream {
-        TcpStream::connect(format!("127.0.0.1:{}", self.port)).unwrap()
-    }
-}
-
-impl Drop for TestProxy {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
+use crate::support::test_proxy::TestProxy;
 
 #[test]
 fn test_proxy_handshake() {
@@ -88,9 +59,9 @@ fn test_proxy_auth() {
     let mut response = Vec::with_capacity(1 + 1 + username.len() + 1 + password.len());
     response.push(0x01); // auth version
     response.push(username.len() as u8); // ulen
-    response.extend(username.as_bytes()); // uname
+    response.extend_from_slice(username.as_bytes()); // uname
     response.push(password.len() as u8); // plen
-    response.extend(password.as_bytes()); // passwd
+    response.extend_from_slice(password.as_bytes()); // passwd
 
     client.write_all(&response).unwrap();
     let mut buf = [0; 2];

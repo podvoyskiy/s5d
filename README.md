@@ -1,4 +1,4 @@
-### SOCKS5 Proxy Server
+## SOCKS5 Proxy Server
 
 **Linux only** (other OS not tested)
 
@@ -40,3 +40,8 @@ curl -x socks5://admin:12345@127.0.0.1:1080 http://httpbin.org/get
 ```
 
 > **Note:** Use `socks5h://` for DNS resolving on the proxy side, `socks5://` for client-side DNS
+
+## Other Crates
+
+- `s5d-client` – SOCKS5 client (work in progress)
+- `s5d-lib` – shared library
