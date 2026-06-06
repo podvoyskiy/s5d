@@ -24,6 +24,10 @@ impl Http {
             host
         );
 
+        if !self.headers.as_ref().is_some_and(|h| h.iter().any(|(k, _)| k == "User-Agent")) {
+            write!(request, "User-Agent: {}/{}\r\n", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")).unwrap();
+        }
+
         if let Some(headers) = &self.headers {
             for (k, v) in headers {
                 write!(request, "{k}: {v}\r\n").unwrap();
@@ -108,6 +112,7 @@ mod test {
 
         assert!(request.starts_with("GET / HTTP/1.1\r\n"));
         assert!(request.contains("Host: example.com\r\n"));
+        assert!(request.contains(&format!("User-Agent: {}/{}\r\n", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))));
         assert!(request.ends_with("\r\n"));
         assert!(!request.contains("Content-Length:"));
     }
