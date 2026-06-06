@@ -6,7 +6,7 @@ use crate::support::test_proxy::TestProxy;
 
 #[test]
 fn test_proxy_handshake() {
-    let proxy = TestProxy::start(33333, None);
+    let proxy = TestProxy::start(33333, None, None);
     let mut client = proxy.client();
 
     client.write_all(&[0x05, 0x01, 0x00]).unwrap();
@@ -18,7 +18,7 @@ fn test_proxy_handshake() {
 
 #[test]
 fn test_proxy_connect() {
-    let proxy = TestProxy::start(33334, None);
+    let proxy = TestProxy::start(33334, None, None);
     let mut client = proxy.client();
 
     // handshake
@@ -45,7 +45,7 @@ fn test_proxy_auth() {
     let username = String::from("admin");
     let password = String::from("12345");
 
-    let proxy = TestProxy::start(33335, Some((username.clone(), password.clone())));
+    let proxy = TestProxy::start(33335, Some((username.clone(), password.clone())), None);
     let mut client = proxy.client();
 
     // handshake

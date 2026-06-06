@@ -1,4 +1,5 @@
 use url::Url;
+use tracing::trace;
 
 use crate::AppError;
 
@@ -54,6 +55,14 @@ pub fn extract_path(url: &str) -> String {
         })
 }
 
+pub fn add_xor(xor: Option<u8>, buf: &mut [u8]) -> &[u8] {
+    if let Some(xor) = xor {
+        trace!(?buf, "xor");
+        for b in buf.iter_mut() { *b ^= xor; }
+    }
+    buf
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -89,5 +98,11 @@ mod test {
         assert_eq!(extract_path("127.0.0.1:80"), String::from("/"));
         assert_eq!(extract_path("http://127.0.0.1?key=value"), String::from("/?key=value"));
         assert_eq!(extract_path("http://127.0.0.1/path?key=value"), String::from("/path?key=value"));
+    }
+
+    #[test]
+    fn test_xor() {
+        assert_eq!(add_xor(None, &mut [0x05, 0x01, 0x00]), &[0x05, 0x01, 0x00]);
+        assert_eq!(add_xor(Some(0xAA), &mut [0x05, 0x02, 0x00, 0x02]), &[0xAF, 0xA8, 0xAA, 0xA8]);
     }
 }

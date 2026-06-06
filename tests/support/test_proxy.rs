@@ -11,12 +11,16 @@ pub struct TestProxy {
 }
 
 impl TestProxy {
-    pub fn start(port: u16, auth: Option<(String, String)>) -> Self {
+    pub fn start(port: u16, auth: Option<(String, String)>, xor: Option<u8>) -> Self {
         let mut cmd = Command::new("./../target/debug/s5d");
         cmd.arg("--port").arg(port.to_string());
 
         if let Some((user, pass)) = &auth {
             cmd.arg("--auth").arg(format!("{user}:{pass}"));
+        }
+
+        if let Some(xor) = &xor {
+            cmd.arg("--xor").arg(xor.to_string());
         }
 
         let child = cmd.spawn().unwrap();

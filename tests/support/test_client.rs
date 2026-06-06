@@ -21,17 +21,25 @@ impl TestClient {
         Self { child }
     }
 
-    pub fn run(proxy: &str, target: &str, data: Option<&str>, headers: Option<&str>) -> String {
+    pub fn run(proxy: &str, target: &str, auth: Option<(String, String)>, data: Option<&str>, headers: Option<&str>, xor: Option<u8>) -> String {
         let mut cmd = Command::new("./../target/debug/s5d-client");
         cmd
             .arg("--proxy").arg(proxy)
             .arg("--target").arg(target);
+
+        if let Some((user, pass)) = &auth {
+            cmd.arg("--auth").arg(format!("{user}:{pass}"));
+        }
 
         if let Some(data) = &data {
             cmd.arg("--data").arg(data);
         }
         if let Some(headers) = &headers {
             cmd.arg("--headers").arg(headers);
+        }
+
+        if let Some(xor) = &xor {
+            cmd.arg("--xor").arg(xor.to_string());
         }
 
         let output = cmd.output().unwrap();

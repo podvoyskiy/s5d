@@ -25,6 +25,7 @@ impl Socks5Session {
         handshake.push(u8::try_from(methods.len())?);
         handshake.extend_from_slice(&methods);
 
+        utils::add_xor(self.config.xor, handshake.as_mut_slice());
         self.proxy.as_mut().unwrap().write_all(&handshake).await?;
 
         let mut buf = [0; 2];
@@ -45,6 +46,7 @@ impl Socks5Session {
         auth.push(u8::try_from(password.len())?);
         auth.extend_from_slice(password.as_bytes());
 
+        utils::add_xor(self.config.xor, auth.as_mut_slice());
         self.proxy.as_mut().unwrap().write_all(&auth).await?;
 
         let mut buf = [0; 2];
@@ -61,6 +63,7 @@ impl Socks5Session {
         let mut connect = vec![consts::SOCKS_VERSION, consts::connect::CMD, consts::RSV];
         connect.extend_from_slice(&self.config.target.as_ref().unwrap().to_bytes());
 
+        utils::add_xor(self.config.xor, connect.as_mut_slice());
         self.proxy.as_mut().unwrap().write_all(&connect).await?;
 
         let mut buf = [0; 10];

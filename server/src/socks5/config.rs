@@ -7,12 +7,13 @@ use crate::prelude::*;
 pub struct Socks5Config {
     pub host: Ipv4Addr,
     pub port: u16,
-    pub auth: Option<(String, String)>
+    pub auth: Option<(String, String)>,
+    pub xor: Option<u8>,
 }
 
 impl Default for Socks5Config  {
     fn default() -> Self {
-        Self { host: Ipv4Addr::LOCALHOST, port: 1080, auth: None }
+        Self { host: Ipv4Addr::LOCALHOST, port: 1080, auth: None, xor: None }
     }
 }
 
@@ -36,6 +37,10 @@ impl Config for Socks5Config {
                     .split_once(':')
                     .map(|(user, pass)| self.auth = Some((user.to_string(), pass.to_string())))
                     .ok_or_else(|| AppError::Arguments(format!("invalid auth format: {value} (expected username:password)")))?;
+                Ok(())
+            }
+            "--xor" => {
+                self.xor = Some(self.parse_byte(value)?);
                 Ok(())
             }
             _ => Err(AppError::Arguments(format!("unknown argument {key}")))

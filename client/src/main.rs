@@ -41,7 +41,7 @@ fn setup_tracing() {
         .with_target(false)
         .with_env_filter(
             EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("rustls=warn,s5d_client=trace"))
+                .unwrap_or_else(|_| EnvFilter::new("rustls=warn,s5d_client=trace,s5d_lib=trace"))
         )
         .init();
 }

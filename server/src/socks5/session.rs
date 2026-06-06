@@ -30,6 +30,7 @@ impl Socks5Session {
             match self.client.as_mut().unwrap().read(&mut buf).await {
                 Ok(0) => break,
                 Ok(n) => {
+                    if self.state != Socks5State::Tunneling { utils::add_xor(self.config.xor, &mut buf[..n]); }
                     match self.state {
                         Socks5State::Handshake => self.handshake(&buf[..n]).await?,
                         Socks5State::Auth => self.auth(&buf[..n]).await?,

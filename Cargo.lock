@@ -419,7 +419,7 @@ dependencies = [
 
 [[package]]
 name = "s5d"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "s5d-lib",
  "tokio",
@@ -429,7 +429,7 @@ dependencies = [
 
 [[package]]
 name = "s5d-client"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "rustls",
  "s5d-lib",
@@ -442,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "s5d-lib"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "tracing",
  "url",

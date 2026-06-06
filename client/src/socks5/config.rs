@@ -11,11 +11,20 @@ pub struct Socks5Config {
     pub target: Option<Atyp>,
     pub http: Http,
     pub use_tls: bool,
+    pub xor: Option<u8>,
 }
 
 impl Default for Socks5Config  {
     fn default() -> Self {
-        Self { mode: Mode::Cli, proxy: SocketAddr::from(([127, 0, 0, 1], 1080)), auth: None, target: None, http: Http::default(), use_tls: false }
+        Self { 
+            mode: Mode::Cli, 
+            proxy: SocketAddr::from(([127, 0, 0, 1], 1080)), 
+            auth: None, 
+            target: None, 
+            http: Http::default(), 
+            use_tls: false,
+            xor: None
+        }
     }
 }
 
@@ -49,12 +58,12 @@ impl Config for Socks5Config {
             "--method" => {
                 self.http.method = value.parse::<Method>()?;
                 Ok(())
-            },
+            }
             "--data" => {
                 self.http.data = Some(value.to_string());
                 if self.http.method == Method::GET { self.http.method = Method::POST; }
                 Ok(())
-            },
+            }
              "--headers" => {
                 let header = value
                     .split_once(':')
@@ -65,6 +74,10 @@ impl Config for Socks5Config {
                 } else {
                     self.http.headers = Some(vec![header]);
                 }
+                Ok(())
+            }
+            "--xor" => {
+                self.xor = Some(self.parse_byte(value)?);
                 Ok(())
             }
             _ => Err(AppError::Arguments(format!("unknown argument {key}")))
