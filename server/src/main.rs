@@ -5,7 +5,6 @@ mod prelude;
 
 use prelude::*;
 use tokio::net::TcpListener;
-use tracing::Level;
 use tracing_subscriber::fmt;
 use crate::socks5::{config::Socks5Config, session::Socks5Session};
 
@@ -37,6 +36,8 @@ async fn main() -> Result<(), AppError> {
 
 #[cfg(debug_assertions)]
 fn setup_tracing() {
+    use tracing::Level;
+
     fmt()
         .with_target(false)
         .with_max_level(Level::TRACE)
@@ -45,8 +46,13 @@ fn setup_tracing() {
 
 #[cfg(not(debug_assertions))]
 fn setup_tracing() {
+    use tracing_subscriber::EnvFilter;
+
     fmt()
         .with_target(false)
-        .with_max_level(Level::INFO)
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("s5d=info"))
+        )
         .init();
 }

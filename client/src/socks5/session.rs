@@ -29,7 +29,7 @@ impl Socks5Session {
         self.server.as_mut().unwrap().write_all(&handshake).await?;
 
         let mut buf = [0; 2];
-        self.server.as_mut().unwrap().read_exact(&mut buf).await?;
+        self.server.as_mut().unwrap().read_exact(&mut buf).await.map_err(|_| AppError::HandshakeFailed)?;
         trace!(?buf, "handshake");
         if buf[0] != consts::SOCKS_VERSION || !methods.contains(&buf[1]) { 
             return Err(AppError::HandshakeFailed); 
@@ -50,7 +50,7 @@ impl Socks5Session {
         self.server.as_mut().unwrap().write_all(&auth).await?;
 
         let mut buf = [0; 2];
-        self.server.as_mut().unwrap().read_exact(&mut buf).await?;
+        self.server.as_mut().unwrap().read_exact(&mut buf).await.map_err(|_| AppError::AuthFailed)?;
         trace!(?buf, "auth");
 
         if buf[0] != consts::auth::VERSION || buf[1] != consts::reply::SUCCESS { 
@@ -67,7 +67,7 @@ impl Socks5Session {
         self.server.as_mut().unwrap().write_all(&connect).await?;
 
         let mut buf = [0; 10];
-        self.server.as_mut().unwrap().read_exact(&mut buf).await?;
+        self.server.as_mut().unwrap().read_exact(&mut buf).await.map_err(|_| AppError::ConnectFailed)?;
         trace!(?buf, "connect");
 
         if buf[0] != consts::SOCKS_VERSION || buf[1] != consts::reply::SUCCESS { 
