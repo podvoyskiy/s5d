@@ -2,12 +2,12 @@ mod support;
 
 use std::io::{Read, Write};
 
-use crate::support::test_proxy::TestProxy;
+use crate::support::test_server::TestServer;
 
 #[test]
-fn test_proxy_handshake() {
-    let proxy = TestProxy::start(33333, None, None);
-    let mut client = proxy.client();
+fn test_server_handshake() {
+    let server = TestServer::start(33333, None, None);
+    let mut client = server.client();
 
     client.write_all(&[0x05, 0x01, 0x00]).unwrap();
     let mut buf = [0; 2];
@@ -17,9 +17,9 @@ fn test_proxy_handshake() {
 }
 
 #[test]
-fn test_proxy_connect() {
-    let proxy = TestProxy::start(33334, None, None);
-    let mut client = proxy.client();
+fn test_server_connect() {
+    let server = TestServer::start(33334, None, None);
+    let mut client = server.client();
 
     // handshake
     client.write_all(&[0x05, 0x01, 0x00]).unwrap();
@@ -41,12 +41,12 @@ fn test_proxy_connect() {
 }
 
 #[test]
-fn test_proxy_auth() {
+fn test_server_auth() {
     let username = String::from("admin");
     let password = String::from("12345");
 
-    let proxy = TestProxy::start(33335, Some((username.clone(), password.clone())), None);
-    let mut client = proxy.client();
+    let server = TestServer::start(33335, Some((username.clone(), password.clone())), None);
+    let mut client = server.client();
 
     // handshake
     client.write_all(&[0x05, 0x01, 0x02]).unwrap();

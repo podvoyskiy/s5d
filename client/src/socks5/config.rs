@@ -1,12 +1,17 @@
-use std::net::{IpAddr, SocketAddr};
+use std::fmt::Debug;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use crate::http::{Http, Method};
 use crate::prelude::*;
 
-#[derive(Debug)]
 pub struct Socks5Config {
     pub mode: Mode,
-    pub proxy: SocketAddr,
+    pub server: SocketAddr,
+
+    //Proxy mode
+    pub listen: SocketAddr,
+
+    //Cli mode
     pub auth: Option<(String, String)>,
     pub target: Option<Atyp>,
     pub http: Http,
@@ -14,11 +19,34 @@ pub struct Socks5Config {
     pub xor: Option<u8>,
 }
 
+impl Debug for Socks5Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("Socks5Config");
+        s.field("mode", &self.mode);
+        s.field("server", &self.server);
+
+        match self.mode {
+            Mode::Cli => {
+                s.field("auth", &self.auth);
+                s.field("target", &self.target);
+                s.field("http", &self.http);
+                s.field("use_tls", &self.use_tls);
+                s.field("xor", &self.xor);
+            },
+            Mode::Proxy | Mode::_Tun => {
+                s.field("listen", &self.listen);
+            },
+        }
+        s.finish()
+    }
+}
+
 impl Default for Socks5Config  {
     fn default() -> Self {
         Self { 
             mode: Mode::Cli, 
-            proxy: SocketAddr::from(([127, 0, 0, 1], 1080)), 
+            server: SocketAddr::from((Ipv4Addr::LOCALHOST, 1080)),
+            listen: SocketAddr::from((Ipv4Addr::LOCALHOST, 1081)),
             auth: None, 
             target: None, 
             http: Http::default(), 
@@ -35,11 +63,18 @@ impl Config for Socks5Config {
                 self.mode = Mode::try_from(value)?;
                 Ok(())
             }
-            "--proxy" => {
-                self.proxy = value.parse()
-                    .map_err(|_| AppError::Arguments("invalid proxy addr".into()))?;
+            "--server" => {
+                self.server = value.parse().map_err(|_| AppError::Arguments("invalid server addr".into()))?;
                 Ok(())
             }
+
+            //Proxy mode
+            "--listen" => {
+                self.listen = value.parse().map_err(|_| AppError::Arguments("invalid local addr".into()))?;
+                Ok(())
+            }
+
+            //Cli mode
             "--auth" => {
                 value
                     .split_once(':')
@@ -85,11 +120,21 @@ impl Config for Socks5Config {
     }
     
     fn validate(&mut self) -> Result<(), AppError> {
-        if self.mode == Mode::Cli && self.target.is_none() {
-            return Err(AppError::Arguments("missed param --target".into()));
-        }
-        if self.use_tls && self.target.as_ref().unwrap().host_str().parse::<IpAddr>().is_ok() {
-            return Err(AppError::Arguments("invalid target: https requires domain name, not IP".into()));
+        match self.mode {
+            Mode::Cli => {
+                if self.target.is_none() {
+                    return Err(AppError::Arguments("missed param --target".into()));
+                }
+                if self.use_tls && self.target.as_ref().unwrap().host_str().parse::<IpAddr>().is_ok() {
+                    return Err(AppError::Arguments("invalid target: https requires domain name, not IP".into()));
+                }
+            },
+            Mode::Proxy => {
+                if self.listen.port() == 0 {
+                    return Err(AppError::Arguments("port cannot be 0".into()));
+                }
+            },
+            Mode::_Tun => return Err(AppError::Arguments("mode not yet implemented".into())),
         }
         Ok(())
     }
@@ -102,11 +147,11 @@ use super::*;
 
     #[test]
     fn test_valid_args() {
-        let args = vec!["program", "--mode", "cli", "--proxy", "127.0.0.1:1080", "--target", "https://example.com:8443"];
+        let args = vec!["program", "--mode", "cli", "--server", "127.0.0.1:1080", "--target", "https://example.com:8443"];
         let mut config = Socks5Config::from_args(args).unwrap();
         assert!(config.validate().is_ok());
         assert_eq!(config.mode, Mode::Cli);
-        assert_eq!(config.proxy, SocketAddr::from(([127, 0, 0, 1], 1080)));
+        assert_eq!(config.server, SocketAddr::from((Ipv4Addr::LOCALHOST, 1080)));
         assert_eq!(config.use_tls, true);
     }
 
@@ -115,7 +160,7 @@ use super::*;
         let args = vec![
             "program", 
             "--mode", "cli", 
-            "--proxy", "127.0.0.1:1080", 
+            "--server", "127.0.0.1:1080", 
             "--target", "https://example.com",
             "--headers", "Content-Type:application/json",
             "--headers", "Authorization:Bearer qwerty123",
@@ -131,7 +176,7 @@ use super::*;
 
     #[test]
     fn test_https_with_ip() {
-        let args = vec!["program", "--mode", "cli", "--proxy", "127.0.0.1:1080", "--target", "https://34.234.10.121/get"];
+        let args = vec!["program", "--mode", "cli", "--server", "127.0.0.1:1080", "--target", "https://34.234.10.121/get"];
         let mut config = Socks5Config::from_args(args).unwrap();
         let err = config.validate().unwrap_err();
         assert!(err.to_string().contains("https requires domain name"));

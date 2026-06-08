@@ -62,7 +62,7 @@ mod test {
     fn test_valid_args() {
         let args = vec!["program", "--host", "127.0.0.1", "--port", "3000"];
         let config = Socks5Config::from_args(args).unwrap();
-        assert_eq!(config.host, (Ipv4Addr::new(127, 0, 0, 1)));
+        assert_eq!(config.host, (Ipv4Addr::LOCALHOST));
         assert_eq!(config.port, 3000);
     }
 

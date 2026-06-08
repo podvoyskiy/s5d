@@ -9,22 +9,27 @@ pub struct TestClient {
 }
 
 impl TestClient {
-    pub fn start(proxy: &str, target: &str) -> Self {
-        let child = 
-            Command::new("./../target/debug/s5d-client")
-            .arg("--proxy").arg(proxy)
-            .arg("--target").arg(target)
-            .spawn().unwrap();
+    pub fn start(server: &str, mode: &str, target: Option<&str>) -> Self {
+        let mut cmd = Command::new("./../target/debug/s5d-client");
+        cmd
+            .arg("--server").arg(server)
+            .arg("--mode").arg(mode);
+
+        if let Some(target) = target {
+            cmd.arg("--target").arg(target);
+        }
+
+        let child: Child = cmd.spawn().unwrap();
 
         thread::sleep(Duration::from_millis(200));
 
         Self { child }
     }
 
-    pub fn run(proxy: &str, target: &str, auth: Option<(String, String)>, data: Option<&str>, headers: Option<&str>, xor: Option<u8>) -> String {
+    pub fn run(server: &str, target: &str, auth: Option<(String, String)>, data: Option<&str>, headers: Option<&str>, xor: Option<u8>) -> String {
         let mut cmd = Command::new("./../target/debug/s5d-client");
         cmd
-            .arg("--proxy").arg(proxy)
+            .arg("--server").arg(server)
             .arg("--target").arg(target);
 
         if let Some((user, pass)) = &auth {

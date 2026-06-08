@@ -1,4 +1,4 @@
-.PHONY: server server-auth server-xor client-get client-post client-https client-xor test test-server test-client test-lib build
+.PHONY: server server-auth server-xor client client-https client-xor client-proxy test test-server test-client test-lib build
 
 server:
 	cargo run --bin s5d
@@ -9,17 +9,17 @@ server-auth:
 server-xor:
 	cargo run --bin s5d -- --xor 0xAA
 
-client-get:
+client:
 	cargo run --bin s5d-client -- --target http://34.234.10.121/get?key=value
-
-client-post:
-	cargo run --bin s5d-client -- --target http://httpbin.org/post --data '{"key":"value"}'
 
 client-https:
 	cargo run --bin s5d-client -- --target https://httpbin.org/post --data '{"key":"value"}'
 
 client-xor:
 	cargo run --bin s5d-client -- --xor 0xAA --target https://httpbin.org/post --data '{"key":"value"}'
+
+client-proxy:
+	cargo run --bin s5d-client -- --mode proxy
 
 test: test-server test-client test-lib
 
@@ -39,10 +39,9 @@ s: server
 sa: server-auth
 sx: server-xor
 c: client
-cg: client-get
-cp: client-post
 ch: client-https
 cx: client-xor
+cp: client-proxy
 t: test
 ts: test-server
 tc: test-client

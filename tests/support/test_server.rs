@@ -5,12 +5,12 @@ use std::net::TcpStream;
 use std::thread;
 use std::time::Duration;
 
-pub struct TestProxy {
+pub struct TestServer {
     child: Child,
     port: u16,
 }
 
-impl TestProxy {
+impl TestServer {
     pub fn start(port: u16, auth: Option<(String, String)>, xor: Option<u8>) -> Self {
         let mut cmd = Command::new("./../target/debug/s5d");
         cmd.arg("--port").arg(port.to_string());
@@ -35,7 +35,7 @@ impl TestProxy {
     }
 }
 
-impl Drop for TestProxy {
+impl Drop for TestServer {
     fn drop(&mut self) {
         let _ = self.child.kill();
         let _ = self.child.wait();

@@ -6,6 +6,7 @@ mod socks5;
 mod http;
 
 use prelude::*;
+use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tracing_subscriber::fmt;
 use tracing_subscriber::EnvFilter;
@@ -19,20 +20,34 @@ async fn main() -> Result<(), AppError> {
     let mut config = Socks5Config::new()?;
     config.validate()?;
 
-    debug!(config = ?config, "socks5 client started");
+    match config.mode {
+        Mode::Cli => {
+            debug!(config = ?config, "socks5 client started");
+            let stream = TcpStream::connect(config.server).await.map_err(|_| AppError::TargetUnreachable)?;
+            let mut session = Socks5Session::new(config, stream);
 
-    if config.mode != Mode::Cli {
-        return Err(AppError::Socks5(format!("mode {:?} not yet implemented", config.mode)));
+            if session.handshake().await? == consts::auth::AUTH { session.auth().await?; }
+            session.connect().await?;
+            session.send().await
+        },
+        Mode::Proxy => {
+            let listener = TcpListener::bind(config.listen).await?;
+            info!(config = ?config, "socks5 client started");
+
+            loop {
+                let (mut client_stream, client_addr) = listener.accept().await?;
+                info!(%client_addr, "new connection");
+
+                tokio::spawn(async move {
+                    let mut server_stream = TcpStream::connect(config.server).await.map_err(|_| AppError::TargetUnreachable)?;
+                    tokio::io::copy_bidirectional(&mut client_stream, &mut server_stream).await?;
+                    info!(%client_addr, "connection closed");
+                    Ok::<(), AppError>(())
+                });
+            }
+        },
+        Mode::_Tun => Err(AppError::Socks5(format!("mode {:?} not yet implemented", config.mode))),
     }
-
-    let stream = TcpStream::connect(config.proxy).await.map_err(|_| AppError::TargetUnreachable)?;
-
-    let mut session = Socks5Session::new(config, stream);
-    if session.handshake().await? == consts::auth::AUTH {
-        session.auth().await?;
-    }
-    session.connect().await?;
-    session.send().await
 }
 
 #[cfg(debug_assertions)]

@@ -8,12 +8,12 @@ use crate::prelude::*;
 
 pub struct Socks5Session {
     config: Socks5Config,
-    proxy: Option<TcpStream>,
+    server: Option<TcpStream>,
 }
 
 impl Socks5Session {
-    pub fn new(config: Socks5Config, proxy: TcpStream) -> Self {
-        Self { config, proxy: Some(proxy) }
+    pub fn new(config: Socks5Config, server: TcpStream) -> Self {
+        Self { config, server: Some(server) }
     }
 
     pub async fn handshake(&mut self) -> Result<u8, AppError> {
@@ -26,10 +26,10 @@ impl Socks5Session {
         handshake.extend_from_slice(&methods);
 
         utils::add_xor(self.config.xor, handshake.as_mut_slice());
-        self.proxy.as_mut().unwrap().write_all(&handshake).await?;
+        self.server.as_mut().unwrap().write_all(&handshake).await?;
 
         let mut buf = [0; 2];
-        self.proxy.as_mut().unwrap().read_exact(&mut buf).await?;
+        self.server.as_mut().unwrap().read_exact(&mut buf).await?;
         trace!(?buf, "handshake");
         if buf[0] != consts::SOCKS_VERSION || !methods.contains(&buf[1]) { 
             return Err(AppError::HandshakeFailed); 
@@ -47,10 +47,10 @@ impl Socks5Session {
         auth.extend_from_slice(password.as_bytes());
 
         utils::add_xor(self.config.xor, auth.as_mut_slice());
-        self.proxy.as_mut().unwrap().write_all(&auth).await?;
+        self.server.as_mut().unwrap().write_all(&auth).await?;
 
         let mut buf = [0; 2];
-        self.proxy.as_mut().unwrap().read_exact(&mut buf).await?;
+        self.server.as_mut().unwrap().read_exact(&mut buf).await?;
         trace!(?buf, "auth");
 
         if buf[0] != consts::auth::VERSION || buf[1] != consts::reply::SUCCESS { 
@@ -64,10 +64,10 @@ impl Socks5Session {
         connect.extend_from_slice(&self.config.target.as_ref().unwrap().to_bytes());
 
         utils::add_xor(self.config.xor, connect.as_mut_slice());
-        self.proxy.as_mut().unwrap().write_all(&connect).await?;
+        self.server.as_mut().unwrap().write_all(&connect).await?;
 
         let mut buf = [0; 10];
-        self.proxy.as_mut().unwrap().read_exact(&mut buf).await?;
+        self.server.as_mut().unwrap().read_exact(&mut buf).await?;
         trace!(?buf, "connect");
 
         if buf[0] != consts::SOCKS_VERSION || buf[1] != consts::reply::SUCCESS { 
@@ -82,7 +82,7 @@ impl Socks5Session {
 
     async fn http(&mut self) -> Result<(), AppError> {
         let host = self.config.target.as_ref().unwrap().host_str();
-        let mut stream = self.proxy.take().unwrap();
+        let mut stream = self.server.take().unwrap();
 
         let request = self.config.http.build_request(&host);
         stream.write_all(request.as_bytes()).await?;
@@ -97,7 +97,7 @@ impl Socks5Session {
         let server_name = ServerName::try_from(host.clone())
             .map_err(|_| AppError::InvalidDomain)?;
 
-        let mut tls_stream = connector.connect(server_name, self.proxy.take().unwrap()).await?;
+        let mut tls_stream = connector.connect(server_name, self.server.take().unwrap()).await?;
 
         let request = self.config.http.build_request(&host);
         tls_stream.write_all(request.as_bytes()).await?;

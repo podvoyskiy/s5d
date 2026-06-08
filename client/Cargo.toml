@@ -1,6 +1,6 @@
 [package]
 name = "s5d-client"
-version = "0.2.0"
+version = "0.3.0"
 description = "SOCKS5 client for s5d crate"
 edition.workspace = true
 authors.workspace = true
@@ -26,5 +26,9 @@ path = "src/main.rs"
 test = true
 
 [[test]]
-name = "client"
-path = "../tests/client.rs"
+name = "client_cli"
+path = "../tests/client_cli.rs"
+
+[[test]]
+name = "client_proxy"
+path = "../tests/client_proxy.rs"

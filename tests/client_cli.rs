@@ -1,18 +1,18 @@
-use crate::support::{test_client::TestClient, test_proxy::TestProxy};
+use crate::support::{test_client::TestClient, test_server::TestServer};
 
 mod support;
 
 #[test]
 fn test_client() {
     let port: u16 = 33336;
-    let _proxy = TestProxy::start(port, None, None);
-    let _client = TestClient::start(&format!("127.0.0.1:{port}"), "http://httpbin.org/get");
+    let _server = TestServer::start(port, None, None);
+    let _client = TestClient::start(&format!("127.0.0.1:{port}"), "cli", Some("http://httpbin.org/get"));
 }
 
 #[test]
 fn test_http() {
     let port: u16 = 33337;
-    let _proxy = TestProxy::start(port, None, None);
+    let _server = TestServer::start(port, None, None);
     let output = TestClient::run(
         &format!("127.0.0.1:{port}"), 
         "http://httpbin.org/post", 
@@ -30,7 +30,7 @@ fn test_http() {
 #[test]
 fn test_https() {
     let port: u16 = 33338;
-    let _proxy = TestProxy::start(port, None, None);
+    let _server = TestServer::start(port, None, None);
     let output = TestClient::run(
         &format!("127.0.0.1:{port}"), 
         "https://httpbin.org/post", 
@@ -53,7 +53,7 @@ fn test_xor() {
     let password = String::from("12345");
     let xor = 0xAA;
 
-    let _proxy = TestProxy::start(port, Some((username.clone(), password.clone())), Some(xor));
+    let _server = TestServer::start(port, Some((username.clone(), password.clone())), Some(xor));
     let output = TestClient::run(
         &format!("127.0.0.1:{port}"), 
         "https://httpbin.org/get", 
