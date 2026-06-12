@@ -10,6 +10,7 @@ use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tracing_subscriber::fmt;
 use tracing_subscriber::EnvFilter;
+use std::io::Read;
 
 use crate::socks5::{config::Socks5Config, session::Socks5Session};
 
@@ -46,7 +47,25 @@ async fn main() -> Result<(), AppError> {
                 });
             }
         },
-        Mode::_Tun => Err(AppError::Socks5(format!("mode {:?} not yet implemented", config.mode))),
+        Mode::Tun => {
+            let mut config = tun::Configuration::default();
+            config
+                .address((10, 0, 0, 9))
+                .netmask((255, 255, 255, 0))
+                .destination((10, 0, 0, 1))
+                .up();
+            
+            config.platform_config(|config| { config.ensure_root_privileges(true); });
+
+            let mut dev = tun::create(&config)
+                .map_err(|e| AppError::ModeTun(format!("failed to create tun interface: {e}")))?;
+            let mut buf = [0; 4096];
+
+            loop {
+                let amount = dev.read(&mut buf)?;
+                println!("{:?}", &buf[0..amount]);
+            }
+        },
     }
 }
 

@@ -33,7 +33,7 @@ impl Debug for Socks5Config {
                 s.field("use_tls", &self.use_tls);
                 s.field("xor", &self.xor);
             },
-            Mode::Proxy | Mode::_Tun => {
+            Mode::Proxy | Mode::Tun => {
                 s.field("listen", &self.listen);
             },
         }
@@ -128,13 +128,13 @@ impl Config for Socks5Config {
                 if self.use_tls && self.target.as_ref().unwrap().host_str().parse::<IpAddr>().is_ok() {
                     return Err(AppError::Arguments("invalid target: https requires domain name, not IP".into()));
                 }
-            },
+            }
             Mode::Proxy => {
                 if self.listen.port() == 0 {
                     return Err(AppError::Arguments("port cannot be 0".into()));
                 }
-            },
-            Mode::_Tun => return Err(AppError::Arguments("mode not yet implemented".into())),
+            }
+            Mode::Tun => {}
         }
         Ok(())
     }
