@@ -33,9 +33,10 @@ impl Debug for Socks5Config {
                 s.field("use_tls", &self.use_tls);
                 s.field("xor", &self.xor);
             },
-            Mode::Proxy | Mode::Tun => {
+            Mode::Proxy => {
                 s.field("listen", &self.listen);
             },
+            Mode::Tun => {},
         }
         s.finish()
     }
