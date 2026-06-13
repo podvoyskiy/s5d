@@ -1,7 +1,8 @@
 use std::{io::Read, net::Ipv4Addr};
-use rtnetlink::{Handle, RouteMessageBuilder, new_connection, packet_route::route::RouteMessage};
+use rtnetlink::{Handle, RouteMessageBuilder, new_connection, packet_route::{route::RouteMessage, rule::RuleAction}};
 
-use tun::Device;
+use s5d_lib::colorize::Colorize;
+use tun::{AbstractDevice, Device};
 use crate::prelude::*;
 
 const TUN_NAME: &str = "tun0";
@@ -27,36 +28,51 @@ impl TunGuard {
 
         let dev = tun::create(&config)
             .map_err(|e| AppError::ModeTun(format!("failed to create tun interface: {e}")))?;
+        
+        let tun_index = dev.tun_index().map_err(|e| AppError::ModeTun(format!("{e}")))?;
 
-        let (handle, route) = Self::setup_routes().await?;
+        let (handle, route) = Self::setup_routes(tun_index as u32).await?;
         
         Ok(Self { dev, handle, route })
     }
 
-    pub async fn setup_routes() -> Result<(Handle, RouteMessage), AppError> {
+    pub async fn setup_routes(tun_index: u32) -> Result<(Handle, RouteMessage), AppError> {
         let (connection, handle, _) = new_connection()?;
         tokio::spawn(connection);
         
         // adding the default route to table 100 via TUN
-        let gateway = Ipv4Addr::new(192, 168, 1, 1);
         let destination = Ipv4Addr::UNSPECIFIED;
         let prefix_len = 0;
         let route = RouteMessageBuilder::<Ipv4Addr>::new()
             .destination_prefix(destination, prefix_len)
-            .gateway(gateway)
+            .output_interface(tun_index)
             .table_id(TABLE_ID)
             .build();
 
-        handle.route().add(route.clone()).execute().await
+        match handle.route().add(route.clone()).execute().await {
+            Ok(_) => {},
+            Err(e) => {
+                if e.to_string().contains("File exists") {
+                    println!("{}", "route already exists, continue...".yellow());
+                } else {
+                    return Err(AppError::ModeTun(format!("failed to create ip route: {e}")));
+                }
+            },
+        }
+
+        // adding a rule that all traffic goes to table 100
+        //TODO правило не удаляется автоматически. надо чистить
+        handle
+            .rule()
+            .add()
+            .v4()
+            .output_interface(TUN_NAME.to_string())
+            .action(RuleAction::ToTable)
+            .table_id(TABLE_ID)
+            .priority(1000)
+            .execute()
+            .await
             .map_err(|e| AppError::ModeTun(format!("failed to create ip route: {e}")))?;
-
-        // // adding a rule that all traffic goes to table 100
-        // let status = Command::new("ip")
-        //     .args(["rule", "add", "from", "all", "lookup", &TABLE_ID.to_string(), "priority", "1000"])
-        //     .status()
-        //     .map_err(|e| AppError::ModeTun(format!("ip rule failed: {e}")))?;
-
-        // if !status.success() { eprintln!("{}", "rule with priority 1000 might already exist".yellow()) }
 
         Ok((handle, route))
     }
