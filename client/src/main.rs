@@ -49,9 +49,8 @@ async fn main() -> Result<(), AppError> {
             }
         },
         Mode::Tun => {
-            let mut tun = TunGuard::new()?;
+            let mut tun = TunGuard::new().await?;
             info!(config = ?config, "socks5 client started");
-            TunGuard::setup_routes()?;
             tun.run()
         },
     }
